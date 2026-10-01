@@ -1,0 +1,94 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - STACK PRIMITIVE
+   Predictable flex-based 1D layout for vertical and horizontal component flows
+   ============================================================================== */
+
+.dh-stack {
+  display: flex;
+  box-sizing: border-box;
+}
+
+.dh-stack--inline {
+  display: inline-flex;
+}
+
+/* Direction */
+.dh-stack--column {
+  flex-direction: column;
+}
+
+.dh-stack--row {
+  flex-direction: row;
+}
+
+/* Gap scale mapped directly to design tokens */
+.dh-stack--gap-none {
+  gap: 0;
+}
+
+.dh-stack--gap-xs {
+  gap: var(--space-1); /* 4px */
+}
+
+.dh-stack--gap-sm {
+  gap: var(--space-2); /* 8px */
+}
+
+.dh-stack--gap-md {
+  gap: var(--space-4); /* 16px */
+}
+
+.dh-stack--gap-lg {
+  gap: var(--space-6); /* 24px */
+}
+
+.dh-stack--gap-xl {
+  gap: var(--space-8); /* 32px */
+}
+
+/* Alignment */
+.dh-stack--align-start {
+  align-items: flex-start;
+}
+
+.dh-stack--align-center {
+  align-items: center;
+}
+
+.dh-stack--align-end {
+  align-items: flex-end;
+}
+
+.dh-stack--align-stretch {
+  align-items: stretch;
+}
+
+.dh-stack--align-baseline {
+  align-items: baseline;
+}
+
+/* Justify Content */
+.dh-stack--justify-start {
+  justify-content: flex-start;
+}
+
+.dh-stack--justify-center {
+  justify-content: center;
+}
+
+.dh-stack--justify-end {
+  justify-content: flex-end;
+}
+
+.dh-stack--justify-between {
+  justify-content: space-between;
+}
+
+.dh-stack--justify-around {
+  justify-content: space-around;
+}
+
+/* Wrap */
+.dh-stack--wrap {
+  flex-wrap: wrap;
+}

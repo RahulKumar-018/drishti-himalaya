@@ -1,0 +1,168 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - BUTTON COMPONENT
+   Technical command-center button styles with restrained geometry and accessible states
+   ============================================================================== */
+
+.dh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+/* Accessible focus ring */
+.dh-button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Active tactile feedback */
+.dh-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Disabled state */
+.dh-button:disabled,
+.dh-button[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Sizes */
+.dh-button--sm {
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  gap: var(--space-1);
+}
+
+.dh-button--md {
+  height: 38px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+.dh-button--lg {
+  height: 44px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-base);
+  gap: var(--space-2);
+}
+
+/* Variants */
+
+/* 1. Primary: High-visibility action (glacier cyan accent) */
+.dh-button--primary {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.dh-button--primary:hover:not(:disabled) {
+  background-color: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+
+/* 2. Secondary: Elevated surface action */
+.dh-button--secondary {
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.dh-button--secondary:hover:not(:disabled) {
+  background-color: var(--bg-surface-muted);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* 3. Ghost: Low-emphasis utility action */
+.dh-button--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.dh-button--ghost:hover:not(:disabled) {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent-primary);
+}
+
+/* 4. Danger: High-risk or destructive action */
+.dh-button--danger {
+  background-color: var(--risk-severe-bg);
+  border-color: var(--risk-severe-border);
+  color: var(--risk-severe);
+}
+
+.dh-button--danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+/* Icon slot & spinner */
+.dh-button__icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dh-button--sm .dh-button__icon-slot svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dh-button--md .dh-button__icon-slot svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dh-button--lg .dh-button__icon-slot svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dh-button__label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* Loading Spinner */
+@keyframes dh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dh-button__spinner {
+  animation: dh-spin 0.85s linear infinite;
+}

@@ -1,0 +1,90 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - DIVIDER PRIMITIVE
+   Minimal structural border separator with optional subtle section label
+   ============================================================================== */
+
+.dh-divider {
+  box-sizing: border-box;
+}
+
+/* Horizontal Divider */
+.dh-divider--horizontal {
+  width: 100%;
+  height: 1px;
+  border: none;
+  margin: var(--space-2) 0;
+}
+
+.dh-divider--horizontal.dh-divider--subtle {
+  background-color: var(--border-subtle);
+}
+
+.dh-divider--horizontal.dh-divider--default {
+  background-color: var(--border-default);
+}
+
+.dh-divider--horizontal.dh-divider--strong {
+  background-color: var(--border-strong);
+}
+
+/* Horizontal with Center Label */
+.dh-divider--with-label {
+  height: auto;
+  background-color: transparent !important;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.dh-divider--with-label::before,
+.dh-divider--with-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.dh-divider--with-label.dh-divider--subtle::before,
+.dh-divider--with-label.dh-divider--subtle::after {
+  background-color: var(--border-subtle);
+}
+
+.dh-divider--with-label.dh-divider--default::before,
+.dh-divider--with-label.dh-divider--default::after {
+  background-color: var(--border-default);
+}
+
+.dh-divider--with-label.dh-divider--strong::before,
+.dh-divider--with-label.dh-divider--strong::after {
+  background-color: var(--border-strong);
+}
+
+.dh-divider__label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Vertical Divider */
+.dh-divider--vertical {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.25rem;
+  margin: 0 var(--space-2);
+}
+
+.dh-divider--vertical.dh-divider--subtle {
+  background-color: var(--border-subtle);
+}
+
+.dh-divider--vertical.dh-divider--default {
+  background-color: var(--border-default);
+}
+
+.dh-divider--vertical.dh-divider--strong {
+  background-color: var(--border-strong);
+}

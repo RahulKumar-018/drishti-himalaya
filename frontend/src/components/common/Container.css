@@ -1,0 +1,47 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - CONTAINER PRIMITIVE
+   Consistent horizontal bounds, gutter padding, and centered viewport alignment
+   ============================================================================== */
+
+.dh-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dh-container--centered {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dh-container--gutter {
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .dh-container--gutter {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+/* Maximum width tiers */
+.dh-container--sm {
+  max-width: 640px;
+}
+
+.dh-container--md {
+  max-width: 840px;
+}
+
+.dh-container--lg {
+  max-width: 1080px;
+}
+
+.dh-container--xl {
+  max-width: 1280px;
+}
+
+.dh-container--full {
+  max-width: 100%;
+}
