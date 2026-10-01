@@ -1,0 +1,251 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - TOP NAVIGATION BAR
+   Technical command-center header with product identity and system readiness
+   ============================================================================== */
+
+.dh-topnav {
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dh-topnav__container {
+  max-width: 100%;
+  padding: 0 var(--space-4);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .dh-topnav__container {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* Brand Identity Lockup */
+.dh-topnav__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.dh-topnav__mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-topnav__mark-icon {
+  display: block;
+}
+
+.dh-topnav__identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.dh-topnav__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  white-space: nowrap;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.dh-topnav__subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Center Navigation */
+.dh-topnav__nav {
+  display: flex;
+  align-items: center;
+}
+
+.dh-topnav__nav-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dh-topnav__nav-item {
+  display: inline-flex;
+}
+
+.dh-topnav__nav-btn {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.dh-topnav__nav-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--border-subtle);
+}
+
+.dh-topnav__nav-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.dh-topnav__nav-btn--active {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--border-default);
+  font-weight: 600;
+}
+
+/* Non-functional nav items for Phase 1B.1 */
+.dh-topnav__nav-btn--inactive {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.dh-topnav__nav-btn--inactive:hover {
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+
+/* Right Status Area */
+.dh-topnav__status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dh-topnav__status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+}
+
+.dh-topnav__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  flex-shrink: 0;
+}
+
+.dh-topnav__status-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 680px) {
+  .dh-topnav__container {
+    padding: var(--space-2) var(--space-4);
+    flex-wrap: wrap;
+    min-height: auto;
+    row-gap: var(--space-2);
+  }
+
+  .dh-topnav__brand {
+    order: 1;
+  }
+
+  .dh-topnav__status {
+    order: 2;
+  }
+
+  .dh-topnav__nav {
+    order: 3;
+    width: 100%;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .dh-topnav__nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-topnav__container {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .dh-topnav__brand {
+    gap: var(--space-2);
+  }
+
+  .dh-topnav__mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dh-topnav__title {
+    font-size: var(--text-xs);
+  }
+
+  .dh-topnav__subtitle {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+
+  .dh-topnav__nav-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .dh-topnav__status-indicator {
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .dh-topnav__status-label {
+    font-size: 10px;
+  }
+}
+
