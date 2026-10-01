@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { ArrowRight, Compass } from 'lucide-react';
 import { Divider } from '../common/Divider';
 import { InteractiveMap } from '../map/InteractiveMap';
-import { useEnvironmentalData } from '../../hooks';
+import { useEnvironmentalData, useRiskAssessment } from '../../hooks';
 import './MapViewport.css';
 
 export interface MapViewportProps {
@@ -12,18 +12,28 @@ export interface MapViewportProps {
 
 export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
   const { data: envData, isLoading, isError } = useEnvironmentalData();
+  const riskAssessment = useRiskAssessment(envData);
 
   const getStatusText = () => {
+    let telemetryStr: string;
     if (isLoading && !envData) {
-      return 'ENVIRO-DATA: INITIALIZING...';
+      telemetryStr = 'TELEMETRY: INITIALIZING';
+    } else if (isError || !envData) {
+      telemetryStr = 'TELEMETRY: OFFLINE';
+    } else if (envData.status === 'partial') {
+      telemetryStr = 'TELEMETRY: PARTIAL';
+    } else {
+      telemetryStr = 'TELEMETRY: ONLINE';
     }
-    if (isError || !envData) {
-      return 'ENVIRO-DATA: OFFLINE';
+
+    let riskStr: string;
+    if (riskAssessment.score !== null && riskAssessment.level !== 'INDETERMINATE') {
+      riskStr = `RISK: ${riskAssessment.level} (${riskAssessment.score.toFixed(1)}/100)`;
+    } else {
+      riskStr = 'RISK: INSUFFICIENT DATA';
     }
-    if (envData.status === 'partial') {
-      return 'ENVIRO-DATA: PARTIAL TELEMETRY';
-    }
-    return 'ENVIRO-DATA: ONLINE (OPEN-METEO)';
+
+    return `${telemetryStr} | ${riskStr}`;
   };
 
   return (

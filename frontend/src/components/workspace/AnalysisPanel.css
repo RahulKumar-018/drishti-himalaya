@@ -365,6 +365,270 @@
   color: var(--text-disabled);
 }
 
+/* ==============================================================================
+   HYDRO-METEOROLOGICAL RISK SECTION (PHASE 4)
+   ============================================================================== */
+
+.dh-analysis-panel__risk-telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Hero Score Card */
+.dh-analysis-panel__risk-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__risk-hero-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.dh-analysis-panel__risk-score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.dh-analysis-panel__risk-score-number {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dh-analysis-panel__risk-score-denom {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__risk-level-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Gauge Bar */
+.dh-analysis-panel__risk-gauge {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dh-analysis-panel__risk-gauge-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition-normal);
+}
+
+/* Primary Driver Callout */
+.dh-analysis-panel__risk-driver-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__risk-driver-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__risk-driver-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__risk-driver-val {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__risk-driver-contrib {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* Factor Attribution List */
+.dh-analysis-panel__factors-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dh-analysis-panel__factors-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dh-analysis-panel__factor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__factor-item--unassessed {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
+.dh-analysis-panel__factor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dh-analysis-panel__factor-name {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__factor-status-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__factor-status-badge--active {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--risk-low);
+  border: 1px solid var(--risk-low-border);
+}
+
+.dh-analysis-panel__factor-status-badge--unavailable {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--risk-severe);
+  border: 1px solid var(--risk-severe-border);
+}
+
+.dh-analysis-panel__factor-status-badge--future {
+  background-color: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.dh-analysis-panel__factor-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.dh-analysis-panel__factor-score {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__factor-contrib {
+  color: var(--accent-primary);
+}
+
+.dh-analysis-panel__factor-desc {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* Quality and Caveat Blocks */
+.dh-analysis-panel__risk-quality-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.dh-analysis-panel__risk-quality-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__risk-quality-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.dh-analysis-panel__risk-caveat-box {
+  display: flex;
+  gap: 8px;
+  padding: var(--space-2) var(--space-3);
+  background-color: rgba(234, 179, 8, 0.06);
+  border: 1px solid rgba(234, 179, 8, 0.22);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__risk-caveat-icon {
+  color: var(--risk-moderate);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dh-analysis-panel__risk-caveat-text {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin: 0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 480px) {
   .dh-analysis-panel__header {

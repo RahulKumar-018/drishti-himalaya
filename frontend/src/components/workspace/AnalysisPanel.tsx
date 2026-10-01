@@ -8,12 +8,15 @@ import {
   Radio,
   Clock,
   Compass,
+  Activity,
+  AlertCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { Divider } from '../common/Divider';
-import { useEnvironmentalData } from '../../hooks';
+import { useEnvironmentalData, useRiskAssessment } from '../../hooks';
 import './AnalysisPanel.css';
 
 export interface AnalysisPanelProps {
@@ -30,6 +33,8 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
     lastUpdated,
     refresh: refreshEnv,
   } = useEnvironmentalData();
+
+  const riskAssessment = useRiskAssessment(envData);
 
   // Status badge resolution for Environmental Conditions card
   const renderEnvBadge = () => {
@@ -59,6 +64,50 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
         DATA ONLINE
       </Badge>
     );
+  };
+
+  // Status badge resolution for Hydro-Meteorological Risk card
+  const renderRiskBadge = () => {
+    if (isEnvLoading && !envData) {
+      return (
+        <Badge variant="default" size="sm" showDot>
+          CALCULATING...
+        </Badge>
+      );
+    }
+    switch (riskAssessment.level) {
+      case 'LOW':
+        return (
+          <Badge variant="low" size="sm" showDot>
+            LOW RISK
+          </Badge>
+        );
+      case 'MODERATE':
+        return (
+          <Badge variant="moderate" size="sm" showDot>
+            MODERATE RISK
+          </Badge>
+        );
+      case 'HIGH':
+        return (
+          <Badge variant="high" size="sm" showDot>
+            HIGH RISK
+          </Badge>
+        );
+      case 'SEVERE':
+        return (
+          <Badge variant="severe" size="sm" showDot>
+            SEVERE RISK
+          </Badge>
+        );
+      case 'INDETERMINATE':
+      default:
+        return (
+          <Badge variant="default" size="sm">
+            INSUFFICIENT DATA
+          </Badge>
+        );
+    }
   };
 
   return (
@@ -235,21 +284,156 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
           </p>
         </Card>
 
-        {/* Section 3: Risk Assessment (Preserved Phase 1/2) */}
+        {/* Section 3: Hydro-Meteorological Risk (Phase 4 Foundation) */}
         <Card
           variant="default"
-          title="Risk Assessment"
-          subtitle="Geotechnical &amp; meteorological evaluation"
-          headerAction={
-            <Badge variant="default" size="sm">
-              RISK ENGINE OFFLINE
-            </Badge>
-          }
+          title="Hydro-Meteorological Risk"
+          subtitle="Deterministic hazard exposure evaluation"
+          headerAction={renderRiskBadge()}
           className="dh-analysis-panel__card"
         >
-          <p className="dh-analysis-panel__placeholder-text">
-            Hazard scoring engine pending backend connection. 250m segment slope stability models inactive.
-          </p>
+          <div className="dh-analysis-panel__risk-telemetry">
+            {/* 1. Hero Score Display & Dynamic Gauge */}
+            <div className="dh-analysis-panel__risk-hero">
+              <div className="dh-analysis-panel__risk-hero-top">
+                <div className="dh-analysis-panel__risk-score-display">
+                  <span
+                    className="dh-analysis-panel__risk-score-number"
+                    style={{ color: riskAssessment.colorHex }}
+                  >
+                    {riskAssessment.score !== null ? riskAssessment.score.toFixed(1) : '—'}
+                  </span>
+                  <span className="dh-analysis-panel__risk-score-denom">/ 100</span>
+                </div>
+                <span
+                  className="dh-analysis-panel__risk-level-tag"
+                  style={{ color: riskAssessment.colorHex }}
+                >
+                  {riskAssessment.level !== 'INDETERMINATE'
+                    ? `${riskAssessment.level} EXPOSURE`
+                    : 'INDETERMINATE'}
+                </span>
+              </div>
+
+              {/* Progress Gauge */}
+              <div
+                className="dh-analysis-panel__risk-gauge"
+                role="progressbar"
+                aria-valuenow={riskAssessment.score ?? 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Composite hazard exposure score"
+              >
+                <div
+                  className="dh-analysis-panel__risk-gauge-bar"
+                  style={{
+                    width: `${riskAssessment.score ?? 0}%`,
+                    backgroundColor: riskAssessment.colorHex,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 2. Primary Contributing Factor Callout */}
+            <div className="dh-analysis-panel__risk-driver-box">
+              <div className="dh-analysis-panel__risk-driver-header">
+                <Activity size={12} className="dh-analysis-panel__risk-driver-icon" aria-hidden="true" />
+                <span>Primary Hazard Driver</span>
+              </div>
+              <span className="dh-analysis-panel__risk-driver-val">
+                {riskAssessment.primaryFactor && (riskAssessment.score || 0) > 0
+                  ? riskAssessment.primaryFactor.name
+                  : 'Baseline Calm Conditions'}
+              </span>
+              <span className="dh-analysis-panel__risk-driver-contrib">
+                {riskAssessment.primaryFactor && (riskAssessment.score || 0) > 0
+                  ? `+${riskAssessment.primaryFactor.weightedContribution?.toFixed(1)} pts (${(riskAssessment.primaryFactor.normalizedWeight * 100).toFixed(0)}% active weight)`
+                  : 'All monitored hydro-meteorological metrics are within safe baseline bounds.'}
+              </span>
+            </div>
+
+            <Divider orientation="horizontal" variant="subtle" />
+
+            {/* 3. Factor Attribution Breakdown */}
+            <div className="dh-analysis-panel__factors-section">
+              <span className="dh-analysis-panel__factors-title">Factor Attribution Breakdown</span>
+              <div className="dh-analysis-panel__factors-list">
+                {riskAssessment.factors.map((factor) => {
+                  const isActive = factor.status === 'active';
+                  const isFuture = factor.status === 'unassessed_future_phase';
+                  return (
+                    <div
+                      key={factor.id}
+                      className={clsx('dh-analysis-panel__factor-item', {
+                        'dh-analysis-panel__factor-item--unassessed': isFuture || !isActive,
+                      })}
+                    >
+                      <div className="dh-analysis-panel__factor-header">
+                        <span className="dh-analysis-panel__factor-name">{factor.name}</span>
+                        <span
+                          className={clsx('dh-analysis-panel__factor-status-badge', {
+                            'dh-analysis-panel__factor-status-badge--active': isActive,
+                            'dh-analysis-panel__factor-status-badge--unavailable': factor.status === 'unavailable',
+                            'dh-analysis-panel__factor-status-badge--future': isFuture,
+                          })}
+                        >
+                          {isActive ? 'ACTIVE' : isFuture ? 'PHASE 5/7' : 'UNAVAILABLE'}
+                        </span>
+                      </div>
+                      <div className="dh-analysis-panel__factor-metrics">
+                        <span className="dh-analysis-panel__factor-score">
+                          {isActive && factor.score !== null ? `${factor.score.toFixed(1)} / 100` : '—'}
+                        </span>
+                        <span className="dh-analysis-panel__factor-contrib">
+                          {isActive && factor.weightedContribution !== null
+                            ? `+${factor.weightedContribution.toFixed(1)} pts (${(factor.normalizedWeight * 100).toFixed(0)}% wt)`
+                            : isFuture
+                            ? 'Unassessed'
+                            : 'No data'}
+                        </span>
+                      </div>
+                      <span className="dh-analysis-panel__factor-desc">
+                        {isActive && factor.rawValue !== null
+                          ? `${factor.rawValue} ${factor.unit} • ${factor.thresholdReference}`
+                          : factor.explanation}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Divider orientation="horizontal" variant="subtle" />
+
+            {/* 4. Telemetry Quality Audit */}
+            <div className="dh-analysis-panel__risk-quality-row">
+              <span className="dh-analysis-panel__risk-quality-label">
+                <ShieldAlert size={11} className="dh-analysis-panel__meta-icon" aria-hidden="true" />
+                Data Quality Status
+              </span>
+              <span
+                className="dh-analysis-panel__risk-quality-val"
+                style={{
+                  color:
+                    riskAssessment.dataQuality.rating === 'HIGH'
+                      ? 'var(--risk-low)'
+                      : riskAssessment.dataQuality.rating === 'MODERATE'
+                      ? 'var(--risk-moderate)'
+                      : 'var(--text-muted)',
+                }}
+              >
+                {riskAssessment.dataQuality.rating} ({riskAssessment.dataQuality.activeFactorsCount}/4 Active Telemetry)
+              </span>
+            </div>
+
+            {/* 5. Scientific Limitation Caveat Box */}
+            <div className="dh-analysis-panel__risk-caveat-box" role="note">
+              <AlertCircle size={14} className="dh-analysis-panel__risk-caveat-icon" aria-hidden="true" />
+              <p className="dh-analysis-panel__risk-caveat-text">
+                Assessment is based on available hydro-meteorological and elevation telemetry. Slope stability and historical landslide proximity are not yet assessed. No landslide probability, certainty, or specific event prediction is implied.
+              </p>
+            </div>
+          </div>
         </Card>
 
         {/* Section 4: Route Metrics (Preserved Phase 1/2) */}
@@ -272,7 +456,14 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
             <Divider orientation="horizontal" variant="subtle" />
             <div className="dh-analysis-panel__metric-row">
               <span className="dh-analysis-panel__metric-label">Risk Score</span>
-              <span className="dh-analysis-panel__metric-value">—</span>
+              <span
+                className="dh-analysis-panel__metric-value"
+                style={{
+                  color: riskAssessment.score !== null ? riskAssessment.colorHex : undefined,
+                }}
+              >
+                {riskAssessment.score !== null ? `${riskAssessment.score.toFixed(1)} / 100` : '—'}
+              </span>
             </div>
             <Divider orientation="horizontal" variant="subtle" />
             <div className="dh-analysis-panel__metric-row">
