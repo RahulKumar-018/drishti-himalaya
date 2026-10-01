@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { ArrowRight, Compass } from 'lucide-react';
 import { Divider } from '../common/Divider';
 import { InteractiveMap } from '../map/InteractiveMap';
+import { useEnvironmentalData } from '../../hooks';
 import './MapViewport.css';
 
 export interface MapViewportProps {
@@ -10,6 +11,21 @@ export interface MapViewportProps {
 }
 
 export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
+  const { data: envData, isLoading, isError } = useEnvironmentalData();
+
+  const getStatusText = () => {
+    if (isLoading && !envData) {
+      return 'ENVIRO-DATA: INITIALIZING...';
+    }
+    if (isError || !envData) {
+      return 'ENVIRO-DATA: OFFLINE';
+    }
+    if (envData.status === 'partial') {
+      return 'ENVIRO-DATA: PARTIAL TELEMETRY';
+    }
+    return 'ENVIRO-DATA: ONLINE (OPEN-METEO)';
+  };
+
   return (
     <section
       className={clsx('dh-map-viewport', className)}
@@ -41,9 +57,8 @@ export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
       {/* Bottom Technical Status Bar */}
       <div className="dh-map-viewport__footer">
         <span className="dh-map-viewport__footer-meta">PILOT SECTOR: GARHWAL HIMALAYAS</span>
-        <span className="dh-map-viewport__footer-status">OPENSTREETMAP ENGINE ACTIVE — PHASE 2</span>
+        <span className="dh-map-viewport__footer-status">{getStatusText()}</span>
       </div>
     </section>
   );
 };
-

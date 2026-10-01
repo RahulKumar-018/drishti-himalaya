@@ -45,7 +45,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     height: auto;
-    min-height: auto;
+    min-height: 0;
     gap: var(--space-4);
     padding: var(--space-4);
   }
