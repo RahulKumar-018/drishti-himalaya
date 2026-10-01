@@ -1,0 +1,71 @@
+.dh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.dh-badge--sm {
+  padding: 2px 6px;
+  font-size: var(--text-xs);
+}
+
+.dh-badge--md {
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+}
+
+/* Indicator Dot */
+.dh-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+/* Variants */
+.dh-badge--default {
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+
+.dh-badge--accent {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent-primary);
+}
+
+/* Locked Geotechnical Risk Tier Variants */
+.dh-badge--low {
+  background-color: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+  color: var(--risk-low);
+}
+
+.dh-badge--moderate {
+  background-color: var(--risk-moderate-bg);
+  border-color: var(--risk-moderate-border);
+  color: var(--risk-moderate);
+}
+
+.dh-badge--high {
+  background-color: var(--risk-high-bg);
+  border-color: var(--risk-high-border);
+  color: var(--risk-high);
+}
+
+.dh-badge--severe {
+  background-color: var(--risk-severe-bg);
+  border-color: var(--risk-severe-border);
+  color: var(--risk-severe);
+}
