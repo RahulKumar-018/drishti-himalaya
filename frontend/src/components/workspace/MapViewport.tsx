@@ -1,8 +1,8 @@
 import React from 'react';
 import clsx from 'clsx';
-import { Map, ArrowRight, Compass } from 'lucide-react';
-import { Badge } from '../common/Badge';
+import { ArrowRight, Compass } from 'lucide-react';
 import { Divider } from '../common/Divider';
+import { InteractiveMap } from '../map/InteractiveMap';
 import './MapViewport.css';
 
 export interface MapViewportProps {
@@ -33,30 +33,17 @@ export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
         </div>
       </div>
 
-      {/* Main Map Canvas Area: Restrained Technical Placeholder */}
+      {/* Main Map Canvas Area: Active Leaflet Map */}
       <div className="dh-map-viewport__canvas">
-        <div className="dh-map-viewport__canvas-frame">
-          <div className="dh-map-viewport__icon-box" aria-hidden="true">
-            <Map size={30} className="dh-map-viewport__icon" />
-          </div>
-
-          <h2 className="dh-map-viewport__title">INTERACTIVE MAP</h2>
-
-          <p className="dh-map-viewport__desc">
-            Geospatial terrain and route risk visualization layer
-          </p>
-
-          <Badge variant="default" size="sm" showDot className="dh-map-viewport__badge">
-            LEAFLET MAP MODULE — PENDING
-          </Badge>
-        </div>
+        <InteractiveMap />
       </div>
 
       {/* Bottom Technical Status Bar */}
       <div className="dh-map-viewport__footer">
         <span className="dh-map-viewport__footer-meta">PILOT SECTOR: GARHWAL HIMALAYAS</span>
-        <span className="dh-map-viewport__footer-status">GEOSPATIAL ENGINE PENDING (PHASE 2)</span>
+        <span className="dh-map-viewport__footer-status">OPENSTREETMAP ENGINE ACTIVE — PHASE 2</span>
       </div>
     </section>
   );
 };
+
