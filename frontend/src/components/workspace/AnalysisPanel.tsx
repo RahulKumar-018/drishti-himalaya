@@ -250,6 +250,39 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
                 </div>
               </div>
 
+              {/* DEM-Derived Corridor Alignment Profile Metrics (Phase 5) */}
+              {envData.terrain?.routeProfile && (
+                <>
+                  <Divider orientation="horizontal" variant="subtle" />
+                  <div className="dh-analysis-panel__profile-summary">
+                    <div className="dh-analysis-panel__profile-row">
+                      <span className="dh-analysis-panel__profile-label">Corridor Elevation Range</span>
+                      <span className="dh-analysis-panel__profile-val">
+                        {envData.terrain.routeProfile.minElevationMsl !== null &&
+                        envData.terrain.routeProfile.maxElevationMsl !== null
+                          ? `${envData.terrain.routeProfile.minElevationMsl} – ${envData.terrain.routeProfile.maxElevationMsl} m MSL`
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="dh-analysis-panel__profile-row">
+                      <span className="dh-analysis-panel__profile-label">Elevation Gain / Loss</span>
+                      <span className="dh-analysis-panel__profile-val">
+                        +{envData.terrain.routeProfile.elevationGainM ?? 0}m / -{envData.terrain.routeProfile.elevationLossM ?? 0}m
+                      </span>
+                    </div>
+                    <div className="dh-analysis-panel__profile-row">
+                      <span className="dh-analysis-panel__profile-label">DEM Corridor Alignment Gradient</span>
+                      <span className="dh-analysis-panel__profile-val">
+                        Mean: {envData.terrain.routeProfile.meanRouteGradientDegrees ?? '—'}° ({envData.terrain.routeProfile.meanRouteGradientPercent ?? '—'}%) | Peak: {envData.terrain.routeProfile.peakRouteGradientDegrees ?? '—'}°
+                      </span>
+                    </div>
+                    <div className="dh-analysis-panel__profile-note">
+                      * Straight control polyline; not physical road gradient
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* Refresh Action Trigger */}
               <div className="dh-analysis-panel__env-actions">
                 <Button
@@ -377,7 +410,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
                             'dh-analysis-panel__factor-status-badge--future': isFuture,
                           })}
                         >
-                          {isActive ? 'ACTIVE' : isFuture ? 'PHASE 5/7' : 'UNAVAILABLE'}
+                          {isActive ? 'ACTIVE' : isFuture ? (factor.id === 'scar_proximity' ? 'PHASE 7' : 'UNASSESSED') : 'UNAVAILABLE'}
                         </span>
                       </div>
                       <div className="dh-analysis-panel__factor-metrics">
@@ -422,7 +455,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
                       : 'var(--text-muted)',
                 }}
               >
-                {riskAssessment.dataQuality.rating} ({riskAssessment.dataQuality.activeFactorsCount}/4 Active Telemetry)
+                {riskAssessment.dataQuality.rating} ({riskAssessment.dataQuality.activeFactorsCount}/5 Active Telemetry)
               </span>
             </div>
 
@@ -430,32 +463,51 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
             <div className="dh-analysis-panel__risk-caveat-box" role="note">
               <AlertCircle size={14} className="dh-analysis-panel__risk-caveat-icon" aria-hidden="true" />
               <p className="dh-analysis-panel__risk-caveat-text">
-                Assessment is based on available hydro-meteorological and elevation telemetry. Slope stability and historical landslide proximity are not yet assessed. No landslide probability, certainty, or specific event prediction is implied.
+                Assessment is based on available hydro-meteorological and DEM corridor alignment gradient telemetry. The corridor gradient is calculated along the straight control-point polyline connecting pilot corridor waypoints and is not the gradient of the physical NH-7 road alignment. Static geotechnical slope stability (Factor of Safety) and historical landslide scar proximity are not yet assessed. No landslide probability, certainty, or event prediction is implied.
               </p>
             </div>
           </div>
         </Card>
 
-        {/* Section 4: Route Metrics (Preserved Phase 1/2) */}
+        {/* Section 4: Corridor Metrics (Preserved Phase 1/2 + Phase 5 DEM Metrics) */}
         <Card
           variant="muted"
-          title="Route Metrics"
-          subtitle="Corridor telemetry overview"
+          title="Corridor Metrics"
+          subtitle="Pilot corridor control polyline overview"
           className="dh-analysis-panel__card"
         >
           <div className="dh-analysis-panel__metrics-list">
             <div className="dh-analysis-panel__metric-row">
-              <span className="dh-analysis-panel__metric-label">Distance</span>
-              <span className="dh-analysis-panel__metric-value">—</span>
+              <span className="dh-analysis-panel__metric-label">Corridor Distance</span>
+              <span className="dh-analysis-panel__metric-value">
+                {envData?.terrain?.routeProfile?.totalDistanceM
+                  ? `${(envData.terrain.routeProfile.totalDistanceM / 1000).toFixed(1)} km`
+                  : '—'}
+              </span>
             </div>
             <Divider orientation="horizontal" variant="subtle" />
             <div className="dh-analysis-panel__metric-row">
-              <span className="dh-analysis-panel__metric-label">Estimated Time</span>
-              <span className="dh-analysis-panel__metric-value">—</span>
+              <span className="dh-analysis-panel__metric-label">Mean Corridor Gradient</span>
+              <span className="dh-analysis-panel__metric-value">
+                {envData?.terrain?.routeProfile?.meanRouteGradientDegrees !== null &&
+                envData?.terrain?.routeProfile?.meanRouteGradientDegrees !== undefined
+                  ? `${envData.terrain.routeProfile.meanRouteGradientDegrees.toFixed(1)}° (${envData.terrain.routeProfile.meanRouteGradientPercent?.toFixed(1)}%)`
+                  : '—'}
+              </span>
             </div>
             <Divider orientation="horizontal" variant="subtle" />
             <div className="dh-analysis-panel__metric-row">
-              <span className="dh-analysis-panel__metric-label">Risk Score</span>
+              <span className="dh-analysis-panel__metric-label">Peak Corridor Gradient</span>
+              <span className="dh-analysis-panel__metric-value">
+                {envData?.terrain?.routeProfile?.peakRouteGradientDegrees !== null &&
+                envData?.terrain?.routeProfile?.peakRouteGradientDegrees !== undefined
+                  ? `${envData.terrain.routeProfile.peakRouteGradientDegrees.toFixed(1)}° (${envData.terrain.routeProfile.peakRouteGradientPercent?.toFixed(1)}%)`
+                  : '—'}
+              </span>
+            </div>
+            <Divider orientation="horizontal" variant="subtle" />
+            <div className="dh-analysis-panel__metric-row">
+              <span className="dh-analysis-panel__metric-label">Terrain Exposure Score</span>
               <span
                 className="dh-analysis-panel__metric-value"
                 style={{
@@ -464,11 +516,6 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ className }) => {
               >
                 {riskAssessment.score !== null ? `${riskAssessment.score.toFixed(1)} / 100` : '—'}
               </span>
-            </div>
-            <Divider orientation="horizontal" variant="subtle" />
-            <div className="dh-analysis-panel__metric-row">
-              <span className="dh-analysis-panel__metric-label">Highest Risk Segment</span>
-              <span className="dh-analysis-panel__metric-value">—</span>
             </div>
           </div>
         </Card>

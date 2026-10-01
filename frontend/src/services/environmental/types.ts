@@ -97,17 +97,85 @@ export interface EnvironmentalElevationProfileData {
 }
 
 /**
+ * Geometric segment between two consecutive sampled corridor control coordinates.
+ * Measures DEM-derived longitudinal gradient along the straight corridor control polyline
+ * (not the physical NH-7 road alignment).
+ */
+export interface TerrainSegment {
+  readonly startLat: number;
+  readonly startLon: number;
+  readonly endLat: number;
+  readonly endLon: number;
+  /** Geodesic distance in meters (via Haversine) */
+  readonly distanceM: number;
+  /** Starting elevation in meters MSL */
+  readonly startElevationM: number | null;
+  /** Ending elevation in meters MSL */
+  readonly endElevationM: number | null;
+  /** Elevation difference in meters: endElevation - startElevation */
+  readonly elevationChangeM: number | null;
+  /** Longitudinal grade ratio: |elevationChangeM| / distanceM */
+  readonly gradientRatio: number | null;
+  /** Corridor alignment gradient angle in degrees: arctan(gradientRatio) * (180 / π) */
+  readonly gradientDegrees: number | null;
+  /** Corridor alignment grade expressed as percentage: gradientRatio * 100 */
+  readonly gradientPercent: number | null;
+}
+
+/**
+ * Rigorous DEM corridor alignment elevation and gradient metrics.
+ * Evaluated along the straight control-point polyline connecting pilot corridor waypoints.
+ * NOTE: This metric reflects corridor topographic relief and chord gradient,
+ * not the gradient of the physical NH-7 road alignment.
+ */
+export interface TerrainProfileMetrics {
+  /** Total number of dense coordinate samples across corridor */
+  readonly sampleCount: number;
+  /** Total corridor path distance in meters (sum of chord segment distances) */
+  readonly totalDistanceM: number;
+  /** Minimum ground elevation in meters MSL */
+  readonly minElevationMsl: number | null;
+  /** Maximum ground elevation in meters MSL */
+  readonly maxElevationMsl: number | null;
+  /** Cumulative vertical climb in meters (sum of positive Δh) */
+  readonly elevationGainM: number | null;
+  /** Cumulative vertical descent in meters (sum of negative Δh magnitudes) */
+  readonly elevationLossM: number | null;
+  /** Length-weighted mean corridor alignment gradient in degrees: (Σ gradientDegrees_i * d_i) / Σ d_i */
+  readonly meanRouteGradientDegrees: number | null;
+  /** Length-weighted mean corridor alignment gradient in percent: (Σ |Δh_i|) / (Σ d_i) * 100 */
+  readonly meanRouteGradientPercent: number | null;
+  /** Maximum localized segment gradient in degrees along control polyline */
+  readonly peakRouteGradientDegrees: number | null;
+  /** Maximum localized segment gradient in percent along control polyline */
+  readonly peakRouteGradientPercent: number | null;
+  /** Array of individual analyzed segments */
+  readonly segments: readonly TerrainSegment[];
+}
+
+/**
+ * Full terrain profile payload including raw points and calculated metrics.
+ */
+export interface TerrainProfileData {
+  readonly points: readonly EnvironmentalElevationPoint[];
+  readonly metrics: TerrainProfileMetrics;
+  readonly source: string;
+  readonly fetchedAt: string;
+}
+
+/**
  * Basic Terrain data model.
- * At minimum establishes elevation, and prepares architecture for future
- * slope, aspect, and DEM-derived metrics (Phase 4+).
+ * Supplies spot elevation and dense corridor alignment profile metrics.
  */
 export interface BasicTerrainData {
   elevation: EnvironmentalElevationData;
-  /** Slope inclination in degrees (architectural placeholder for Phase 4) */
+  /** Dense DEM-derived corridor alignment profile metrics along the control polyline */
+  routeProfile?: TerrainProfileMetrics | null;
+  /** Provisional corridor representative gradient in degrees */
   slopeDegrees?: number | null;
-  /** Slope aspect direction, e.g. "NW", "S" (architectural placeholder for Phase 4) */
+  /** Slope aspect direction, e.g. "NW", "S" (architectural placeholder) */
   aspect?: string | null;
-  /** Terrain Ruggedness Index metric (architectural placeholder for Phase 4) */
+  /** Terrain Ruggedness Index metric (architectural placeholder) */
   terrainRuggednessIndex?: number | null;
 }
 

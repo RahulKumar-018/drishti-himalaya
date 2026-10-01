@@ -36,6 +36,51 @@ function roundTo(val: number, decimals: number = 1): number {
   return Math.round(val * factor) / factor;
 }
 
+/**
+ * PROVISIONAL CORRIDOR TOPOGRAPHIC EXPOSURE NORMALIZATION:
+ * Normalizes DEM-derived corridor alignment gradient (degrees) along the pilot control polyline
+ * to a 0–100 exposure score.
+ *
+ * ENGINEERING REFERENCE & ATTRIBUTION:
+ * - Engineering reference: hill-road geometric gradient guidance (IRC:52-2019 ruling 5%, limiting 6%, exceptional 7-8%).
+ * - The 0–100 terrain exposure normalization is a project-specific provisional engineering heuristic
+ *   and is NOT an IRC risk formula.
+ * - This metric is calculated along the straight control-point polyline connecting pilot corridor
+ *   waypoints. It is NOT the gradient of the physical NH-7 road alignment.
+ * - Piecewise intervals:
+ *   - 0.0° to 3.0° (ruling grade guidance): Baseline calm exposure (Score 0 to 20).
+ *   - 3.0° to 8.0° (limiting/exceptional grade guidance): Moderate topographic exposure (Score 20 to 55).
+ *   - 8.0° to 15.0° (steep terrain steps / switchbacks): Elevated corridor exposure (Score 55 to 85).
+ *   - > 15.0° (incised canyon relief): High to critical exposure (Score 85 to 100, clamped at 100).
+ *
+ * SCIENTIFIC CAVEAT:
+ * Evaluated strictly as a provisional corridor topographic exposure proxy. Does NOT represent
+ * geotechnical slope stability (Factor of Safety), historical landslide scar proximity, or failure probability.
+ *
+ * @param gradientDeg DEM-derived corridor alignment gradient in decimal degrees
+ */
+export function calculateTerrainGradientScore(gradientDeg: number): number {
+  if (!Number.isFinite(gradientDeg) || gradientDeg <= 0) {
+    return 0.0;
+  }
+
+  if (gradientDeg <= 3.0) {
+    return (gradientDeg / 3.0) * 20.0;
+  }
+
+  if (gradientDeg <= 8.0) {
+    return 20.0 + ((gradientDeg - 3.0) / 5.0) * 35.0;
+  }
+
+  if (gradientDeg <= 15.0) {
+    return 55.0 + ((gradientDeg - 8.0) / 7.0) * 30.0;
+  }
+
+  // Above 15°: approaches 100 at 25°
+  const extra = Math.min(10.0, gradientDeg - 15.0);
+  return 85.0 + (extra / 10.0) * 15.0;
+}
+
 export class DeterministicRiskEngine implements IRiskEngine {
   public readonly id = 'drishti-deterministic-v1';
   public readonly name = 'Drishti-Himalaya Deterministic Risk Engine';
@@ -44,7 +89,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
   /**
    * Evaluates environmental telemetry against deterministic hazard formulations.
    *
-   * @param telemetry Real environmental data payload from Phase 3 services
+   * @param telemetry Real environmental data payload from Phase 3/5 services
    * @param config Optional configuration overrides
    * @param referenceNowMs Optional reference time in ms (for deterministic testing)
    */
@@ -244,8 +289,50 @@ export class DeterministicRiskEngine implements IRiskEngine {
       };
     }
 
+    // --- Factor 5: Terrain Slope Gradient (DEM-Derived Corridor Alignment Gradient) ---
+    const slopeWeight = effectiveConfig.baseWeights.terrain_slope_gradient;
+    let slopeFactor: RiskFactor;
+    if (features.routeGradientDegrees.isAvailable && features.routeGradientDegrees.value !== null) {
+      const val = features.routeGradientDegrees.value;
+      const rawScore = calculateTerrainGradientScore(val);
+      const score = clamp(roundTo(rawScore, 1), 0.0, 100.0);
+      const peakVal = features.peakGradientDegrees.value;
+      const peakNote = peakVal !== null ? ` Peak segment gradient: ${peakVal.toFixed(1)}°.` : '';
+      slopeFactor = {
+        id: 'terrain_slope_gradient',
+        name: 'Terrain Slope Gradient',
+        category: 'topographic',
+        status: 'active',
+        score,
+        rawWeight: slopeWeight,
+        normalizedWeight: 0,
+        weightedContribution: 0,
+        rawValue: val,
+        unit: 'degrees',
+        thresholdReference: 'Provisional corridor alignment gradient normalization (3°-15°; project heuristic)',
+        isProvisional: true,
+        explanation: `DEM-derived mean corridor alignment gradient of ${val.toFixed(1)}° evaluated as provisional corridor topographic exposure proxy along control polyline.${peakNote}`,
+      };
+    } else {
+      slopeFactor = {
+        id: 'terrain_slope_gradient',
+        name: 'Terrain Slope Gradient',
+        category: 'topographic',
+        status: 'unavailable',
+        score: null,
+        rawWeight: slopeWeight,
+        normalizedWeight: 0,
+        weightedContribution: null,
+        rawValue: null,
+        unit: 'degrees',
+        thresholdReference: 'Provisional corridor alignment gradient normalization (3°-15°; project heuristic)',
+        isProvisional: true,
+        explanation: features.routeGradientDegrees.rejectionReason || 'DEM-derived corridor alignment gradient telemetry is unavailable.',
+      };
+    }
+
     // --- Future Unassessed Factors (Explicitly Distinguishable) ---
-    const slopeFactor: RiskFactor = {
+    const slopeInstabilityFactor: RiskFactor = {
       id: 'slope_instability',
       name: 'Topographic Slope Instability',
       category: 'geotechnical',
@@ -258,7 +345,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
       unit: 'degrees',
       thresholdReference: 'Repose angle sigmoidal function (15° - 60°)',
       isProvisional: false,
-      explanation: 'Geotechnical slope stability is unassessed pending DEM slope profiling in Phase 5.',
+      explanation: 'Geotechnical slope stability is unassessed pending 3D slope profiling.',
     };
 
     const scarFactor: RiskFactor = {
@@ -277,7 +364,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
       explanation: 'Landslide scar proximity is unassessed pending NRSC database ingestion in Phase 7.',
     };
 
-    const allCandidateFactors = [precipFactor, accumFactor, probFactor, elevFactor];
+    const allCandidateFactors = [precipFactor, accumFactor, probFactor, elevFactor, slopeFactor];
     const activeFactors = allCandidateFactors.filter((f) => f.status === 'active' && f.score !== null);
 
     // Sum active raw weights for dynamic normalization
@@ -289,7 +376,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
         level: 'INDETERMINATE',
         colorHex: RISK_TIER_CONFIG.INDETERMINATE.colorHex,
         primaryFactor: null,
-        factors: [...allCandidateFactors, slopeFactor, scarFactor],
+        factors: [...allCandidateFactors, slopeInstabilityFactor, scarFactor],
         summaryExplanation: 'No reliable active telemetry factors available to compute hazard score.',
         dataQuality: features.dataQuality,
         evaluatedAt,
@@ -316,7 +403,8 @@ export class DeterministicRiskEngine implements IRiskEngine {
       normalizedActiveFactors.find((f) => f.id === 'rainfall_accumulation_24h') || accumFactor,
       normalizedActiveFactors.find((f) => f.id === 'precipitation_probability') || probFactor,
       normalizedActiveFactors.find((f) => f.id === 'orographic_elevation') || elevFactor,
-      slopeFactor,
+      normalizedActiveFactors.find((f) => f.id === 'terrain_slope_gradient') || slopeFactor,
+      slopeInstabilityFactor,
       scarFactor,
     ];
 
@@ -428,6 +516,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
       emptyFactor('rainfall_accumulation_24h', '24h Rainfall Accumulation', 'meteorological', config.baseWeights.rainfall_accumulation_24h, 'mm', `LANDSLIP: ${config.accumulation24hThresholdMm} mm`, false),
       emptyFactor('precipitation_probability', 'Precipitation Probability', 'meteorological', config.baseWeights.precipitation_probability, '%', 'WMO convective modifiers', true),
       emptyFactor('orographic_elevation', 'Orographic Elevation Relief', 'topographic', config.baseWeights.orographic_elevation, 'm MSL', `Relief: ${config.elevationCorridorMinMsl}-${config.elevationCorridorMaxMsl} m MSL`, true),
+      emptyFactor('terrain_slope_gradient', 'Terrain Slope Gradient', 'topographic', config.baseWeights.terrain_slope_gradient, 'degrees', 'Provisional corridor alignment gradient normalization (3°-15°; project heuristic)', true),
       {
         id: 'slope_instability',
         name: 'Topographic Slope Instability',
@@ -441,7 +530,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
         unit: 'degrees',
         thresholdReference: 'Repose angle sigmoidal function (15° - 60°)',
         isProvisional: false,
-        explanation: 'Geotechnical slope stability is unassessed pending Phase 5.',
+        explanation: 'Geotechnical slope stability is unassessed pending 3D slope profiling.',
       },
       {
         id: 'scar_proximity',

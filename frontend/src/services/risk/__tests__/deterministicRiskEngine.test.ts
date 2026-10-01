@@ -24,6 +24,7 @@ function createMockTelemetry(overrides: {
   precipitationProbability?: number | null;
   weatherCode?: number | null;
   elevation?: number | null;
+  slopeDegrees?: number | null;
   fetchedAt?: string;
 }): EnvironmentalData {
   const fetchedAt = overrides.fetchedAt || new Date().toISOString();
@@ -59,16 +60,17 @@ function createMockTelemetry(overrides: {
           }
         : null,
     terrain:
-      overrides.elevation !== undefined
+      overrides.elevation !== undefined || overrides.slopeDegrees !== undefined
         ? {
             elevation: {
               latitude: 30.32,
               longitude: 78.92,
-              elevation: overrides.elevation,
+              elevation: overrides.elevation !== undefined ? overrides.elevation : 500,
               elevationUnit: 'm',
               source: 'Test DEM Provider',
               fetchedAt,
             },
+            slopeDegrees: overrides.slopeDegrees !== undefined ? overrides.slopeDegrees : 2.5,
           }
         : null,
     metadata: {
@@ -148,6 +150,7 @@ describe('DeterministicRiskEngine - 12 Scenario Verification', () => {
     const telemetry = createMockTelemetry({
       // No rainfall block
       elevation: 1400,
+      slopeDegrees: null,
     });
 
     const assessment = engine.evaluate(telemetry);
@@ -155,7 +158,7 @@ describe('DeterministicRiskEngine - 12 Scenario Verification', () => {
     assert.ok(assessment.score !== null);
     assert.equal(assessment.dataQuality.rating, 'DEGRADED');
     assert.equal(assessment.dataQuality.activeFactorsCount, 1);
-    assert.equal(assessment.dataQuality.unavailableFactorsCount, 3);
+    assert.equal(assessment.dataQuality.unavailableFactorsCount, 4);
     const elevFactor = assessment.factors.find((f) => f.id === 'orographic_elevation');
     assert.ok(elevFactor);
     assert.equal(elevFactor.normalizedWeight, 1.0); // Dynamically scaled to 100% of active weights

@@ -34,6 +34,7 @@ export type RiskFactorId =
   | 'rainfall_accumulation_24h'
   | 'precipitation_probability'
   | 'orographic_elevation'
+  | 'terrain_slope_gradient'
   | 'slope_instability'
   | 'scar_proximity';
 
@@ -55,7 +56,7 @@ export interface RiskFactor {
   readonly weightedContribution: number | null;
   /** Raw physical metric value before scaling (e.g. 18.4) */
   readonly rawValue: number | null;
-  /** Physical unit of measurement (e.g. "mm/h", "mm", "%", "m MSL") */
+  /** Physical unit of measurement (e.g. "mm/h", "mm", "%", "m MSL", "degrees") */
   readonly unit: string;
   /** Scientific or empirical threshold reference used for normalization */
   readonly thresholdReference: string;
@@ -121,6 +122,8 @@ export interface RiskEngineConfig {
   /** Physical plausibility bounds for elevation rejection */
   readonly elevationPhysicalMinMsl: number;
   readonly elevationPhysicalMaxMsl: number;
+  /** Provisional terrain gradient threshold in degrees (default: 15.0) */
+  readonly slopeGradientThresholdDegrees: number;
   /** Max allowable telemetry age in seconds before flagging as stale (default: 10800 = 3h) */
   readonly telemetryStalenessLimitSeconds: number;
   /** Base weights for candidate factors */
@@ -129,6 +132,7 @@ export interface RiskEngineConfig {
     readonly rainfall_accumulation_24h: number;
     readonly precipitation_probability: number;
     readonly orographic_elevation: number;
+    readonly terrain_slope_gradient: number;
   };
 }
 

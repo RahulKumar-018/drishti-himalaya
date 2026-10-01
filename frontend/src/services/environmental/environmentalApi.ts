@@ -9,13 +9,13 @@ import { ServiceResult } from './types';
 
 // Default configuration with Vite environment variable fallbacks
 export const WEATHER_API_BASE_URL =
-  import.meta.env.VITE_OPEN_METEO_WEATHER_BASE_URL || 'https://api.open-meteo.com/v1';
+  import.meta.env?.VITE_OPEN_METEO_WEATHER_BASE_URL || 'https://api.open-meteo.com/v1';
 
 export const ELEVATION_API_BASE_URL =
-  import.meta.env.VITE_OPEN_METEO_ELEVATION_BASE_URL || 'https://api.open-meteo.com/v1';
+  import.meta.env?.VITE_OPEN_METEO_ELEVATION_BASE_URL || 'https://api.open-meteo.com/v1';
 
 export const DEFAULT_TIMEOUT_MS = Number(
-  import.meta.env.VITE_ENVIRONMENTAL_API_TIMEOUT_MS || 8000
+  import.meta.env?.VITE_ENVIRONMENTAL_API_TIMEOUT_MS || 8000
 );
 
 // Cache TTL: 5 minutes in milliseconds

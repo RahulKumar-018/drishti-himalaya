@@ -21,6 +21,8 @@ export interface ExtractedFeatures {
   readonly precipitationProbability: ExtractedMetric<number>;
   readonly weatherCode: number | null;
   readonly elevationMsl: ExtractedMetric<number>;
+  readonly routeGradientDegrees: ExtractedMetric<number>;
+  readonly peakGradientDegrees: ExtractedMetric<number>;
   readonly dataQuality: DataQualityReport;
 }
 
@@ -36,11 +38,11 @@ function sanitizeNumber(val: unknown): number | null {
 }
 
 /**
- * Extracts and sanitizes real environmental telemetry.
+ * Extracts and sanitizes real environmental and DEM terrain telemetry.
  * Strictly guarantees that corrupted or missing values are classified as unavailable
  * and NEVER converted into artificial minimum or maximum scores.
  *
- * @param telemetry Raw environmental data payload from Phase 3 services
+ * @param telemetry Raw environmental data payload from Phase 3/5 services
  * @param config Optional risk engine configuration overrides
  * @param nowMs Optional timestamp in milliseconds for deterministic time comparisons
  */
@@ -55,7 +57,7 @@ export function extractRiskFeatures(
   if (!telemetry || telemetry.status === 'error') {
     const reason = telemetry?.error || 'Environmental telemetry stream is unavailable or in error status.';
     caveats.push(reason);
-    caveats.push('Geotechnical slope stability and historical landslide scars are unassessed pending Phase 5 & 7.');
+    caveats.push('Historical landslide scar proximity is unassessed pending Phase 7.');
 
     const emptyMetric: ExtractedMetric<number> = {
       value: null,
@@ -69,12 +71,14 @@ export function extractRiskFeatures(
       precipitationProbability: emptyMetric,
       weatherCode: null,
       elevationMsl: emptyMetric,
+      routeGradientDegrees: emptyMetric,
+      peakGradientDegrees: emptyMetric,
       dataQuality: {
         rating: 'INSUFFICIENT',
         completenessPercent: 0,
         activeFactorsCount: 0,
-        unavailableFactorsCount: 4,
-        futureUnassessedFactorsCount: 2,
+        unavailableFactorsCount: 5,
+        futureUnassessedFactorsCount: 1,
         telemetryFreshnessSeconds: null,
         isStale: false,
         caveats,
@@ -183,6 +187,56 @@ export function extractRiskFeatures(
     };
   }
 
+  // --- Feature 5: DEM-Derived Corridor Alignment Gradient (Mean & Peak) ---
+  let routeGradientDegrees: ExtractedMetric<number>;
+  let peakGradientDegrees: ExtractedMetric<number>;
+
+  const rawMeanGrad = sanitizeNumber(
+    telemetry.terrain?.routeProfile?.meanRouteGradientDegrees ?? telemetry.terrain?.slopeDegrees
+  );
+  const rawPeakGrad = sanitizeNumber(telemetry.terrain?.routeProfile?.peakRouteGradientDegrees);
+
+  if (rawMeanGrad === null) {
+    routeGradientDegrees = {
+      value: null,
+      isAvailable: false,
+      rejectionReason: 'DEM-derived corridor alignment gradient telemetry is missing or not yet profiled.',
+    };
+  } else if (rawMeanGrad < 0 || rawMeanGrad > 90) {
+    routeGradientDegrees = {
+      value: null,
+      isAvailable: false,
+      rejectionReason: `Corridor alignment gradient (${rawMeanGrad}°) outside plausible terrestrial range [0, 90°].`,
+    };
+    caveats.push(`Corridor alignment gradient telemetry (${rawMeanGrad}°) rejected as invalid.`);
+  } else {
+    routeGradientDegrees = {
+      value: rawMeanGrad,
+      isAvailable: true,
+      rejectionReason: null,
+    };
+  }
+
+  if (rawPeakGrad === null) {
+    peakGradientDegrees = {
+      value: null,
+      isAvailable: false,
+      rejectionReason: 'Peak corridor alignment gradient telemetry is missing.',
+    };
+  } else if (rawPeakGrad < 0 || rawPeakGrad > 90) {
+    peakGradientDegrees = {
+      value: null,
+      isAvailable: false,
+      rejectionReason: `Peak corridor alignment gradient (${rawPeakGrad}°) outside plausible range [0, 90°].`,
+    };
+  } else {
+    peakGradientDegrees = {
+      value: rawPeakGrad,
+      isAvailable: true,
+      rejectionReason: null,
+    };
+  }
+
   // --- Freshness & Quality Evaluation ---
   let telemetryFreshnessSeconds: number | null = null;
   let isStale = false;
@@ -200,8 +254,14 @@ export function extractRiskFeatures(
     }
   }
 
-  // Count active vs unavailable factors out of 4 candidate active factors
-  const candidateMetrics = [precipitationMmH, accumulation24hMm, precipitationProbability, elevationMsl];
+  // Count active vs unavailable factors out of 5 candidate active factors
+  const candidateMetrics = [
+    precipitationMmH,
+    accumulation24hMm,
+    precipitationProbability,
+    elevationMsl,
+    routeGradientDegrees,
+  ];
   const activeCount = candidateMetrics.filter((m) => m.isAvailable).length;
   const unavailableCount = candidateMetrics.length - activeCount;
   const futureCount = 2; // slope_instability + scar_proximity
@@ -209,7 +269,7 @@ export function extractRiskFeatures(
 
   // Determine overall quality rating
   let rating: DataQualityRating;
-  if (activeCount === 4 && !isStale) {
+  if (activeCount === 5 && !isStale) {
     rating = 'HIGH';
   } else if (activeCount >= 3 && !isStale) {
     rating = 'MODERATE';
@@ -219,8 +279,9 @@ export function extractRiskFeatures(
     rating = 'INSUFFICIENT';
   }
 
-  // Append documentation caveats for unassessed future factors
+  // Append documentation caveats
   caveats.push('Geotechnical slope stability and historical landslide scars are unassessed pending Phase 5 & 7.');
+  caveats.push('Terrain Slope Gradient represents DEM-derived corridor alignment gradient along control-point chords, not physical road gradient, geotechnical slope stability, or failure probability.');
 
   if (unavailableCount > 0) {
     caveats.push(`${unavailableCount} telemetry factor(s) unavailable; remaining active factors dynamically normalized.`);
@@ -232,6 +293,8 @@ export function extractRiskFeatures(
     precipitationProbability,
     weatherCode,
     elevationMsl,
+    routeGradientDegrees,
+    peakGradientDegrees,
     dataQuality: {
       rating,
       completenessPercent,

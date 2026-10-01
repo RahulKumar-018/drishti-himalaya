@@ -9,6 +9,7 @@ import {
   EnvironmentalData,
   EnvironmentalLocation,
   ServiceResult,
+  TerrainProfileMetrics,
 } from './types';
 import {
   getRainfallData,
@@ -17,22 +18,31 @@ import {
   RainfallServiceOptions,
 } from './rainfallService';
 import { getElevation, ElevationServiceOptions } from './elevationService';
+import {
+  getDenseCorridorTerrainProfile,
+  TerrainProfileOptions,
+} from './terrainService';
+import { PILOT_CORRIDOR_COORDINATES } from './corridorConstants';
 
 export * from './types';
 export * from './environmentalApi';
 export * from './rainfallService';
 export * from './elevationService';
+export * from './corridorConstants';
+export * from './terrainService';
 
 export interface CorridorEnvironmentalOptions
   extends RainfallServiceOptions,
-    ElevationServiceOptions {
+    ElevationServiceOptions,
+    TerrainProfileOptions {
   locationName?: string;
+  corridorCoordinates?: Array<{ latitude: number; longitude: number } | [number, number]>;
 }
 
 /**
  * High-level consolidated retriever for corridor environmental telemetry.
- * Concurrently gathers rainfall and elevation data, returning a normalized
- * EnvironmentalData structure with strict state indicators.
+ * Concurrently gathers rainfall, spot elevation, and dense DEM route gradient profile,
+ * returning a normalized EnvironmentalData structure with strict state indicators.
  *
  * @param latitude Geographic latitude of corridor monitoring node
  * @param longitude Geographic longitude of corridor monitoring node
@@ -49,10 +59,17 @@ export async function getCorridorEnvironmentalData(
     name: options.locationName || 'NH-7 Corridor Center (Garhwal)',
   };
 
+  const waypoints = options.corridorCoordinates || PILOT_CORRIDOR_COORDINATES;
+
   // Run independent environmental queries concurrently
-  const [rainfallResult, elevationResult] = await Promise.all([
+  const [rainfallResult, elevationResult, terrainProfileResult] = await Promise.all([
     getRainfallData(latitude, longitude, options),
     getElevation(latitude, longitude, options),
+    getDenseCorridorTerrainProfile(waypoints, {
+      targetIntervalM: options.targetIntervalM,
+      forceRefresh: options.forceRefresh,
+      timeoutMs: options.timeoutMs,
+    }),
   ]);
 
   const sources: string[] = [];
@@ -72,11 +89,21 @@ export async function getCorridorEnvironmentalData(
     errors.push(`Elevation: ${elevationResult.error}`);
   }
 
+  let routeProfileMetrics: TerrainProfileMetrics | null = null;
+  if (terrainProfileResult.status === 'success') {
+    routeProfileMetrics = terrainProfileResult.data.metrics;
+    if (!sources.includes(terrainProfileResult.data.source)) {
+      sources.push(terrainProfileResult.data.source);
+    }
+  } else {
+    errors.push(`Terrain Profile: ${terrainProfileResult.error}`);
+  }
+
   // Determine aggregate telemetry status
   let status: EnvironmentalData['status'];
-  if (rainfallData && elevationData) {
+  if (rainfallData && elevationData && routeProfileMetrics) {
     status = 'success';
-  } else if (rainfallData || elevationData) {
+  } else if (rainfallData || elevationData || routeProfileMetrics) {
     status = 'partial';
   } else {
     status = 'error';
@@ -88,9 +115,10 @@ export async function getCorridorEnvironmentalData(
     terrain: elevationData
       ? {
           elevation: elevationData,
-          slopeDegrees: null, // Architectural slot for Phase 4
-          aspect: null,       // Architectural slot for Phase 4
-          terrainRuggednessIndex: null, // Architectural slot for Phase 4
+          routeProfile: routeProfileMetrics,
+          slopeDegrees: routeProfileMetrics?.meanRouteGradientDegrees ?? null,
+          aspect: null,
+          terrainRuggednessIndex: null,
         }
       : null,
     status,

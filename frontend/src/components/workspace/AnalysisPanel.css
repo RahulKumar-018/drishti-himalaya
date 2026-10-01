@@ -321,6 +321,47 @@
   color: var(--text-secondary);
 }
 
+/* Route Profile Summary (Phase 5) */
+.dh-analysis-panel__profile-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.dh-analysis-panel__profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.dh-analysis-panel__profile-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dh-analysis-panel__profile-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__profile-note {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-top: 2px;
+}
+
 /* Actions Row */
 .dh-analysis-panel__env-actions {
   display: flex;

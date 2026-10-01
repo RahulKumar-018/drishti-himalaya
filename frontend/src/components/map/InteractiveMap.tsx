@@ -40,38 +40,14 @@ const endBeaconIcon = L.divIcon({
   popupAnchor: [0, -14],
 });
 
-/**
- * NH-7 Pilot Corridor: Rishikesh → Joshimath
- * Representative progression along the Alaknanda gorge.
- * Explicitly designated as prototype geometry for Phase 2.
- */
-export const PILOT_CORRIDOR_COORDINATES: [number, number][] = [
-  [30.0869, 78.2676], // Rishikesh (Origin)
-  [30.1347, 78.3888], // Shivpuri
-  [30.1082, 78.4905], // Byasi
-  [30.0766, 78.5028], // Kaudiyala
-  [30.1459, 78.5989], // Devprayag (Bhagirathi/Alaknanda confluence)
-  [30.2291, 78.6948], // Maletha
-  [30.2185, 78.7451], // Kirtinagar
-  [30.2224, 78.7844], // Srinagar
-  [30.2520, 78.9040], // Dhari Devi
-  [30.2844, 78.9811], // Rudraprayag (Mandakini/Alaknanda confluence)
-  [30.2890, 79.1550], // Gauchar
-  [30.2573, 79.2157], // Karnaprayag (Pindar/Alaknanda confluence)
-  [30.3010, 79.2780], // Langasu
-  [30.3300, 79.3250], // Nandaprayag
-  [30.4042, 79.3364], // Chamoli
-  [30.4180, 79.3850], // Birahi
-  [30.4289, 79.4299], // Pipalkoti
-  [30.4720, 79.4580], // Pakhi
-  [30.5050, 79.4890], // Gulabkoti
-  [30.5280, 79.5080], // Helang
-  [30.5564, 79.5663], // Joshimath (Destination)
-];
+import {
+  PILOT_CORRIDOR_COORDINATES,
+  RISHIKESH_COORDS,
+  JOSHIMATH_COORDS,
+  DEFAULT_CORRIDOR_CENTER as CORRIDOR_CENTER,
+} from '../../services/environmental/corridorConstants';
 
-const RISHIKESH_COORDS: [number, number] = [30.0869, 78.2676];
-const JOSHIMATH_COORDS: [number, number] = [30.5564, 79.5663];
-const CORRIDOR_CENTER: [number, number] = [30.32, 78.92];
+export { PILOT_CORRIDOR_COORDINATES, RISHIKESH_COORDS, JOSHIMATH_COORDS, CORRIDOR_CENTER };
 
 /**
  * Helper component ensuring Leaflet container recalculates dimensions
