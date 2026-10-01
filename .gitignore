@@ -1,0 +1,81 @@
+# Drishti-Himalaya .gitignore
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+venv/
+.venv/
+ENV/
+
+# Node & Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# Editor & OS files
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Geospatial & Large Data Caches (Do not commit heavy rasters)
+data/raw/*.tif
+data/raw/*.tiff
+data/raw/*.dem
+data/raw/*.pbf
+*.geotiff
+*.gpkg-shm
+*.gpkg-wal
+*.sqlite-wal
+*.sqlite-shm
+!data/fixtures/*.json
+!data/fixtures/*.geojson
+
+# Temporary & logs
+logs/
+*.log
+scratch/
+tmp/
