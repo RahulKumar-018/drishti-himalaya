@@ -1,0 +1,209 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - MAP VIEWPORT PLACEHOLDER
+   Structural frame reserved for the Leaflet interactive map
+   ============================================================================== */
+
+.dh-map-viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+
+/* Header Context Bar */
+.dh-map-viewport__header {
+  min-height: 38px;
+  padding: 6px var(--space-4);
+  background-color: var(--bg-surface-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.dh-map-viewport__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.dh-map-viewport__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.dh-map-viewport__tag-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-map-viewport__corridor-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+}
+
+.dh-map-viewport__header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.dh-map-viewport__waypoint {
+  white-space: nowrap;
+}
+
+.dh-map-viewport__waypoint-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Canvas Area */
+.dh-map-viewport__canvas {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background-color: var(--bg-app);
+  box-sizing: border-box;
+}
+
+.dh-map-viewport__canvas-frame {
+  width: 100%;
+  max-width: 440px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  box-sizing: border-box;
+}
+
+.dh-map-viewport__icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  margin-bottom: var(--space-3);
+}
+
+.dh-map-viewport__icon {
+  display: block;
+}
+
+.dh-map-viewport__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+.dh-map-viewport__desc {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4) 0;
+  max-width: 320px;
+  line-height: 1.4;
+}
+
+.dh-map-viewport__badge {
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+/* Footer Telemetry Strip */
+.dh-map-viewport__footer {
+  min-height: 32px;
+  padding: 4px var(--space-4);
+  background-color: var(--bg-surface-muted);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.dh-map-viewport__footer-meta,
+.dh-map-viewport__footer-status {
+  white-space: nowrap;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 768px) {
+  .dh-map-viewport {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dh-map-viewport {
+    min-height: 300px;
+  }
+
+  .dh-map-viewport__header {
+    padding: 6px var(--space-3);
+  }
+
+  .dh-map-viewport__canvas {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .dh-map-viewport__canvas-frame {
+    padding: var(--space-4) var(--space-3);
+    min-height: 180px;
+  }
+
+  .dh-map-viewport__footer {
+    padding: 4px var(--space-3);
+    font-size: 9px;
+  }
+}
