@@ -1,0 +1,19 @@
+/* ==============================================================================
+   MAP WORKSPACE PAGE STYLES
+   Full-height interactive geospatial command center
+   ============================================================================== */
+
+.dh-map-workspace-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .dh-map-workspace-page {
+    min-height: 0;
+  }
+}

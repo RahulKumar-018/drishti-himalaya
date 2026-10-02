@@ -3,16 +3,54 @@ import clsx from 'clsx';
 import { ArrowRight, Compass } from 'lucide-react';
 import { Divider } from '../common/Divider';
 import { InteractiveMap } from '../map/InteractiveMap';
+import { EnvironmentalData } from '../../services/environmental/types';
+import { RiskAssessment } from '../../services/risk/types';
+import { CorridorSegmentRisk } from '../../services/risk/segmentRiskService';
 import { useEnvironmentalData, useRiskAssessment } from '../../hooks';
+import { UseLocationSelectionReturn } from '../../hooks/useLocationSelection';
 import './MapViewport.css';
 
 export interface MapViewportProps {
   className?: string;
+  envData?: EnvironmentalData | null;
+  riskAssessment?: RiskAssessment | null;
+  isLoading?: boolean;
+  isError?: boolean;
+  segments?: CorridorSegmentRisk[];
+  selectedSegmentId?: string | null;
+  onSelectSegment?: (segment: CorridorSegmentRisk) => void;
+  isSimulated?: boolean;
+  scenarioPrecipitation?: number | null;
+  onResetScenario?: () => void;
+  locationSelection?: UseLocationSelectionReturn;
 }
 
-export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
-  const { data: envData, isLoading, isError } = useEnvironmentalData();
-  const riskAssessment = useRiskAssessment(envData);
+export const MapViewport: React.FC<MapViewportProps> = ({
+  className,
+  envData: propEnvData,
+  riskAssessment: propRiskAssessment,
+  isLoading: propIsLoading,
+  isError: propIsError,
+  segments,
+  selectedSegmentId,
+  onSelectSegment,
+  isSimulated = false,
+  scenarioPrecipitation = null,
+  onResetScenario,
+  locationSelection,
+}) => {
+  // Use authoritative props or fallback to hook if mounted standalone
+  const hookEnv = useEnvironmentalData({ autoFetch: propEnvData === undefined });
+  const envData = propEnvData !== undefined ? propEnvData : hookEnv.data;
+  const isLoading = propIsLoading !== undefined ? propIsLoading : hookEnv.isLoading;
+  const isError = propIsError !== undefined ? propIsError : hookEnv.isError;
+
+  const hookRisk = useRiskAssessment(propRiskAssessment ? null : envData);
+  const riskAssessment = propRiskAssessment ?? hookRisk;
+
+  const hasCustomRoute = Boolean(
+    locationSelection?.origin || locationSelection?.destination
+  );
 
   const getStatusText = () => {
     let telemetryStr: string;
@@ -28,12 +66,27 @@ export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
 
     let riskStr: string;
     if (riskAssessment.score !== null && riskAssessment.level !== 'INDETERMINATE') {
-      riskStr = `RISK: ${riskAssessment.level} (${riskAssessment.score.toFixed(1)}/100)`;
+      riskStr = isSimulated
+        ? `SCENARIO RISK: ${riskAssessment.level} (${riskAssessment.score.toFixed(1)}/100) [SIMULATION]`
+        : `RISK: ${riskAssessment.level} (${riskAssessment.score.toFixed(1)}/100)`;
     } else {
       riskStr = 'RISK: INSUFFICIENT DATA';
     }
 
-    return `${telemetryStr} | ${riskStr}`;
+    let routeStr = '';
+    if (locationSelection?.isRouting) {
+      routeStr = ' | ROAD ROUTING: IN PROGRESS';
+    } else if (locationSelection?.activeRoute?.status === 'success') {
+      routeStr = ` | ROAD ROUTE: READY (${locationSelection.activeRoute.metrics.formattedDistance}, ${locationSelection.activeRoute.metrics.formattedDuration})`;
+    } else if (locationSelection?.routingError) {
+      routeStr = ' | ROAD ROUTE: UNAVAILABLE';
+    } else if (locationSelection?.isRouteReady) {
+      routeStr = ' | ROUTE INPUT: READY';
+    } else if (hasCustomRoute) {
+      routeStr = ' | ROUTE INPUT: IN PROGRESS';
+    }
+
+    return `${telemetryStr} | ${riskStr}${routeStr}`;
   };
 
   return (
@@ -49,24 +102,70 @@ export const MapViewport: React.FC<MapViewportProps> = ({ className }) => {
             <span>MAP VIEWPORT</span>
           </div>
           <Divider orientation="vertical" variant="subtle" />
-          <span className="dh-map-viewport__corridor-code">NH-7 CORRIDOR</span>
+          <span className="dh-map-viewport__corridor-code">
+            {locationSelection?.activeRoute ? 'ROAD ROUTE (OSRM)' : hasCustomRoute ? 'CUSTOM ROUTE' : 'NH-7 CORRIDOR'}
+          </span>
         </div>
 
         <div className="dh-map-viewport__header-right">
-          <span className="dh-map-viewport__waypoint">RISHIKESH</span>
-          <ArrowRight size={11} className="dh-map-viewport__waypoint-arrow" aria-hidden="true" />
-          <span className="dh-map-viewport__waypoint">JOSHIMATH</span>
+          {hasCustomRoute ? (
+            <>
+              <span className="dh-map-viewport__waypoint">
+                {locationSelection?.origin?.name.toUpperCase() ?? 'START LOCATION'}
+              </span>
+              <ArrowRight size={11} className="dh-map-viewport__waypoint-arrow" aria-hidden="true" />
+              <span className="dh-map-viewport__waypoint">
+                {locationSelection?.destination?.name.toUpperCase() ?? 'DESTINATION'}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="dh-map-viewport__waypoint">RISHIKESH</span>
+              <ArrowRight size={11} className="dh-map-viewport__waypoint-arrow" aria-hidden="true" />
+              <span className="dh-map-viewport__waypoint">JOSHIMATH</span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Main Map Canvas Area: Active Leaflet Map */}
       <div className="dh-map-viewport__canvas">
-        <InteractiveMap />
+        <InteractiveMap
+          segments={segments}
+          selectedSegmentId={selectedSegmentId}
+          onSelectSegment={onSelectSegment}
+          isSimulated={isSimulated}
+          scenarioPrecipitation={scenarioPrecipitation}
+          onResetScenario={onResetScenario}
+          origin={locationSelection?.origin}
+          destination={locationSelection?.destination}
+          liveLocation={locationSelection?.liveLocation}
+          selectionMode={locationSelection?.selectionMode}
+          tempMapPoint={locationSelection?.tempMapPoint}
+          onMapClick={locationSelection?.handleMapClick}
+          onConfirmTempMapPoint={locationSelection?.confirmTempMapPoint}
+          onCancelTempMapPoint={locationSelection?.cancelTempMapPoint}
+          onCancelSelectionMode={locationSelection?.cancelMapSelection}
+          onStartMapSelection={locationSelection?.startMapSelection}
+          onUseLiveLocation={locationSelection?.useLiveLocationAsOrigin}
+          onResetRouteSelection={locationSelection?.resetSelection}
+          isLocating={locationSelection?.isLocating}
+          activeRoute={locationSelection?.activeRoute}
+          isRouting={locationSelection?.isRouting}
+          routingError={locationSelection?.routingError}
+          onRetryRouting={locationSelection?.retryRouting}
+        />
       </div>
 
       {/* Bottom Technical Status Bar */}
       <div className="dh-map-viewport__footer">
-        <span className="dh-map-viewport__footer-meta">PILOT SECTOR: GARHWAL HIMALAYAS</span>
+        <span className="dh-map-viewport__footer-meta">
+          {locationSelection?.activeRoute
+            ? `UTTARAKHAND ROAD ROUTE (${locationSelection.activeRoute.provider.toUpperCase()})`
+            : hasCustomRoute
+            ? 'UTTARAKHAND DYNAMIC ROUTE SECTOR (PHASE 1)'
+            : 'PILOT SECTOR: GARHWAL HIMALAYAS'}
+        </span>
         <span className="dh-map-viewport__footer-status">{getStatusText()}</span>
       </div>
     </section>

@@ -23,6 +23,26 @@ Its primary operational pilot corridor is **National Highway 7 (NH-7, Rishikesh 
 
 ---
 
+## Current Project Status
+
+- **Frontend Status:** **Complete, rigorously tested, and backend-integration-ready.** Built with React 19, TypeScript, Vite, Leaflet, and UXMagic design tokens.
+- **Backend Status:** **Planned for next development phase.** (FastAPI services, PostgreSQL/PostGIS database).
+- **ML Status:** **Planned for backend phase.** (XGBoost spatial landslide susceptibility inference conditioned on historical GSI/NRSC scars; current frontend relies exclusively on deterministic MCDA physics baseline).
+- **Automated Test Suite:** **119/119 tests passing** across 22 suites (`npm test`).
+
+### Implemented Frontend Capabilities
+1. **Interactive Corridor Map:** Leaflet/React-Leaflet geospatial viewport across the NH-7 Garhwal pilot corridor (Rishikesh → Joshimath), featuring segment-level risk polyline shaders, custom pulse beacons, and waypoint markers.
+2. **Route Comparison HUD:** Side-by-side alternative route evaluation comparing primary NH-7 vs bypass options by risk score, travel time, and distance with strictly neutral, objective labeling.
+3. **Decision Rationale:** Explains comparative factor trade-offs (slope, rainfall accumulation, scar proximity) between routes with transparent delta metrics.
+4. **Hazard Segment Inspection:** Deep-dive inspector for selected road segments featuring the 4-factor MCDA breakdown (Slope 35%, Rainfall 30%, Scar Proximity 20%, Road Geometry 15%) and tactical transit advisories.
+5. **Risk Intelligence Pipeline:** 5-stage explainable pipeline visualizing data flow from Weather/DEM through deterministic MCDA to alerts, clearly demarcating active telemetry vs planned ML inference.
+6. **What-If Precipitation Stress Simulator:** Interactive slider (0–100 mm/h) enabling real-time recalculation of corridor hazard indices under hypothetical cloudburst scenarios.
+7. **Early Warning Alert Feed:** SDRF-aligned tactical advisories with severity filtering, map cross-linking, and explicit demo/live data labeling.
+8. **UXMagic-Aligned Design System:** Modern dark geospatial palette (`#0B1420`), Manrope headings, Inter body typography, JetBrains Mono telemetry, and full `prefers-reduced-motion` support.
+9. **Live Connectivity Status:** Real-time browser network listener displaying transparent operational status ("Online" / "Connection unavailable" / "Offline capability planned").
+
+---
+
 ## 2. Core Mathematical Risk Formulation
 
 The platform disaggregates highway alignments into uniform **250-meter** discrete linear segments. Each segment is evaluated via a Mechanistic Multi-Criteria Decision Analysis (MCDA) model:

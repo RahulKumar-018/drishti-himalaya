@@ -1,0 +1,133 @@
+/* ==============================================================================
+   DECISION RATIONALE STYLING (UXMagic Frame 3 Aligned)
+   ============================================================================== */
+
+.dh-decision-rationale {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dh-decision-rationale__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dh-decision-rationale__subtitle {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+}
+
+.dh-decision-rationale__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.dh-decision-rationale__context {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.dh-decision-rationale__brain-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+/* Empty State */
+.dh-decision-rationale__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-muted);
+  border: 1px dashed var(--border-subtle);
+}
+
+.dh-decision-rationale__empty-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dh-decision-rationale__empty-text {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* 3-Column Factor Grid */
+.dh-decision-rationale__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.dh-decision-rationale__card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+}
+
+.dh-decision-rationale__factor-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.dh-decision-rationale__delta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.dh-decision-rationale__delta-val {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dh-decision-rationale__delta-val--good {
+  color: var(--risk-low);
+}
+
+.dh-decision-rationale__delta-val--bad {
+  color: var(--risk-severe);
+}
+
+.dh-decision-rationale__delta-val--neutral {
+  color: var(--text-primary);
+}
+
+.dh-decision-rationale__trend-icon--good {
+  color: var(--risk-low);
+}
+
+.dh-decision-rationale__trend-icon--bad {
+  color: var(--risk-severe);
+}
+
+.dh-decision-rationale__factor-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin-top: auto;
+}

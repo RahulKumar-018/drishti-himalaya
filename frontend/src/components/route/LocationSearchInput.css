@@ -1,0 +1,174 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - LOCATION SEARCH INPUT
+   Glassmorphic autocomplete input for Himalayan location queries
+   ============================================================================== */
+
+.dh-location-search {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.dh-location-search__label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.dh-location-search__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: rgba(14, 22, 38, 0.7);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.dh-location-search__input-wrapper:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.dh-location-search__prefix-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: var(--space-2);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.dh-location-search__icon-check {
+  color: var(--risk-low);
+}
+
+.dh-location-search__icon-search {
+  color: var(--text-muted);
+}
+
+.dh-location-search__input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 8px 8px 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.dh-location-search__input::placeholder {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dh-location-search__input--selected {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-location-search__clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 6px var(--space-2);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.dh-location-search__clear-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Autocomplete Dropdown */
+.dh-location-search__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background-color: rgba(14, 22, 38, 0.96);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.dh-location-search__option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color var(--transition-fast);
+}
+
+.dh-location-search__option:last-child {
+  border-bottom: none;
+}
+
+.dh-location-search__option:hover,
+.dh-location-search__option--highlighted {
+  background-color: rgba(0, 229, 255, 0.08);
+}
+
+.dh-location-search__option-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dh-location-search__option-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-location-search__option-name {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-location-search__option-category {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.dh-location-search__option-sub {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-left: 18px;
+  margin-top: 2px;
+}
+
+.dh-location-search__empty {
+  padding: 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}

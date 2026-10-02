@@ -1,6 +1,6 @@
 /* ==============================================================================
    DRISHTI-HIMALAYA - TOP NAVIGATION BAR
-   Technical command-center header with product identity and system readiness
+   Technical command-center header with product identity, full routing, and mobile drawer
    ============================================================================== */
 
 .dh-topnav {
@@ -8,6 +8,9 @@
   border-bottom: 1px solid var(--border-subtle);
   width: 100%;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .dh-topnav__container {
@@ -33,6 +36,14 @@
   align-items: center;
   gap: var(--space-3);
   flex-shrink: 0;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: opacity var(--transition-fast);
+}
+
+.dh-topnav__brand:hover {
+  opacity: 0.9;
 }
 
 .dh-topnav__mark {
@@ -79,10 +90,16 @@
   white-space: nowrap;
 }
 
-/* Center Navigation */
+/* Center Desktop Navigation */
 .dh-topnav__nav {
   display: flex;
   align-items: center;
+}
+
+@media (max-width: 960px) {
+  .dh-topnav__nav {
+    display: none;
+  }
 }
 
 .dh-topnav__nav-list {
@@ -108,6 +125,9 @@
   border-radius: var(--radius-sm);
   padding: 6px 12px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition:
     color var(--transition-fast),
     background-color var(--transition-fast),
@@ -115,9 +135,19 @@
   white-space: nowrap;
 }
 
+.dh-topnav__btn-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
 .dh-topnav__nav-btn:hover {
   color: var(--text-primary);
   background-color: var(--border-subtle);
+}
+
+.dh-topnav__nav-btn:hover .dh-topnav__btn-icon {
+  color: var(--accent-primary);
 }
 
 .dh-topnav__nav-btn:focus-visible {
@@ -132,22 +162,62 @@
   font-weight: 600;
 }
 
-/* Non-functional nav items for Phase 1B.1 */
+.dh-topnav__nav-btn--active .dh-topnav__btn-icon {
+  color: var(--accent-primary);
+}
+
 .dh-topnav__nav-btn--inactive {
   color: var(--text-muted);
   cursor: default;
 }
 
-.dh-topnav__nav-btn--inactive:hover {
-  color: var(--text-secondary);
-  background-color: transparent;
+/* Right Status & Mobile Toggle Area */
+.dh-topnav__right-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
 }
 
-/* Right Status Area */
+/* Network Telemetry Online/Offline Pill */
+.dh-topnav__net-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.dh-topnav__net-status--online {
+  color: var(--risk-low);
+  border-color: var(--risk-low-border);
+}
+
+.dh-topnav__net-status--offline {
+  color: var(--risk-severe);
+  border-color: var(--risk-severe-border);
+  background-color: var(--risk-severe-bg);
+}
+
+.dh-topnav__net-icon {
+  flex-shrink: 0;
+}
+
+.dh-topnav__net-icon--offline {
+  animation: pulse 2s infinite;
+}
+
 .dh-topnav__status {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
 }
 
 .dh-topnav__status-indicator {
@@ -179,50 +249,104 @@
   white-space: nowrap;
 }
 
-/* Responsive adjustments */
-@media (max-width: 680px) {
-  .dh-topnav__container {
-    padding: var(--space-2) var(--space-4);
-    flex-wrap: wrap;
-    min-height: 0;
-    row-gap: var(--space-2);
-  }
+/* Mobile Toggle Button */
+.dh-topnav__mobile-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
 
-  .dh-topnav__brand {
-    order: 1;
+@media (max-width: 960px) {
+  .dh-topnav__mobile-toggle {
+    display: flex;
   }
+}
 
-  .dh-topnav__status {
-    order: 2;
-  }
+.dh-topnav__mobile-toggle:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-elevated);
+}
 
-  .dh-topnav__nav {
-    order: 3;
-    width: 100%;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--border-subtle);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
+/* Mobile Drawer Menu */
+.dh-topnav__mobile-drawer {
+  background-color: var(--bg-surface-elevated);
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-lg);
+  animation: dh-slide-down 0.2s ease-out;
+}
 
-  .dh-topnav__nav::-webkit-scrollbar {
-    display: none;
+@keyframes dh-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dh-topnav__mobile-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dh-topnav__mobile-item {
+  width: 100%;
+}
+
+.dh-topnav__mobile-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.dh-topnav__mobile-icon {
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+}
+
+.dh-topnav__mobile-btn:hover {
+  background-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.dh-topnav__mobile-btn--active {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 @media (max-width: 480px) {
   .dh-topnav__container {
     padding: var(--space-2) var(--space-3);
-  }
-
-  .dh-topnav__brand {
-    gap: var(--space-2);
-  }
-
-  .dh-topnav__mark {
-    width: 28px;
-    height: 28px;
   }
 
   .dh-topnav__title {
@@ -231,21 +355,9 @@
 
   .dh-topnav__subtitle {
     font-size: 9px;
-    letter-spacing: 0.04em;
-  }
-
-  .dh-topnav__nav-btn {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-
-  .dh-topnav__status-indicator {
-    padding: 3px 8px;
-    gap: 6px;
   }
 
   .dh-topnav__status-label {
     font-size: 10px;
   }
 }
-

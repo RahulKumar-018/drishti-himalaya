@@ -97,30 +97,63 @@ export interface EnvironmentalElevationProfileData {
 }
 
 /**
+ * Coordinate pair for geographic positioning.
+ */
+export interface TerrainCoordinate {
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+/**
+ * Individual sampled point along the corridor elevation profile.
+ * Exposes geographic coordinates, DEM elevation, and cumulative corridor distance.
+ */
+export interface TerrainProfileSample {
+  /** Geographic coordinate pair */
+  readonly coordinate: TerrainCoordinate;
+  /** DEM elevation in meters MSL, or null if unresolvable/corrupt */
+  readonly elevation: number | null;
+  /** Cumulative corridor distance from the first sample (origin) in meters */
+  readonly distanceFromStart: number;
+}
+
+/**
  * Geometric segment between two consecutive sampled corridor control coordinates.
  * Measures DEM-derived longitudinal gradient along the straight corridor control polyline
  * (not the physical NH-7 road alignment).
  */
-export interface TerrainSegment {
+export interface TerrainProfileSegment {
+  /** 0-based index of start sample in samples array */
+  readonly startIndex: number;
+  /** 0-based index of end sample in samples array */
+  readonly endIndex: number;
+  /** Cumulative corridor distance at start sample in meters */
+  readonly startDistance: number;
+  /** Cumulative corridor distance at end sample in meters */
+  readonly endDistance: number;
+  /** Geodesic horizontal distance between the two samples in meters (via Haversine) */
+  readonly horizontalDistance: number;
+  /** Vertical elevation difference (endElevation - startElevation) in meters, preserving sign (+ = gain, - = loss) */
+  readonly elevationChange: number | null;
+  /** Gradient magnitude expressed as percentage: abs(elevationChange) / horizontalDistance * 100 */
+  readonly gradientPercent: number | null;
+  /** Gradient magnitude in degrees: atan(abs(elevationChange) / horizontalDistance) * (180 / π) */
+  readonly gradientDegrees: number | null;
+
+  // Phase 5 backward-compatibility properties:
   readonly startLat: number;
   readonly startLon: number;
   readonly endLat: number;
   readonly endLon: number;
-  /** Geodesic distance in meters (via Haversine) */
   readonly distanceM: number;
-  /** Starting elevation in meters MSL */
   readonly startElevationM: number | null;
-  /** Ending elevation in meters MSL */
   readonly endElevationM: number | null;
-  /** Elevation difference in meters: endElevation - startElevation */
   readonly elevationChangeM: number | null;
-  /** Longitudinal grade ratio: |elevationChangeM| / distanceM */
   readonly gradientRatio: number | null;
-  /** Corridor alignment gradient angle in degrees: arctan(gradientRatio) * (180 / π) */
-  readonly gradientDegrees: number | null;
-  /** Corridor alignment grade expressed as percentage: gradientRatio * 100 */
-  readonly gradientPercent: number | null;
 }
+
+/** Backward-compatibility alias for Phase 5 TerrainSegment */
+export type TerrainSegment = TerrainProfileSegment;
 
 /**
  * Rigorous DEM corridor alignment elevation and gradient metrics.
@@ -129,36 +162,59 @@ export interface TerrainSegment {
  * not the gradient of the physical NH-7 road alignment.
  */
 export interface TerrainProfileMetrics {
-  /** Total number of dense coordinate samples across corridor */
-  readonly sampleCount: number;
-  /** Total corridor path distance in meters (sum of chord segment distances) */
-  readonly totalDistanceM: number;
+  // Phase 6A standard properties:
+  /** Total corridor path distance in meters (sum of segment horizontal distances) */
+  readonly totalDistance: number;
   /** Minimum ground elevation in meters MSL */
-  readonly minElevationMsl: number | null;
+  readonly minElevation: number | null;
   /** Maximum ground elevation in meters MSL */
+  readonly maxElevation: number | null;
+  /** Cumulative vertical climb in meters: sum(max(deltaElevation, 0)) */
+  readonly elevationGain: number | null;
+  /** Cumulative vertical descent magnitude in meters: sum(abs(min(deltaElevation, 0))) */
+  readonly elevationLoss: number | null;
+  /** Length-weighted corridor gradient percent: sum(abs(deltaElevation)) / totalDistance * 100 */
+  readonly meanGradientPercent: number | null;
+  /** Length-weighted corridor gradient degrees: atan(meanGradientPercent / 100) * (180 / π) */
+  readonly meanGradientDegrees: number | null;
+  /** Maximum localized segment gradient magnitude in percentage */
+  readonly peakGradientPercent: number | null;
+  /** Maximum localized segment gradient magnitude in degrees */
+  readonly peakGradientDegrees: number | null;
+  /** 0-based index of the segment producing the peak gradient */
+  readonly peakGradientSegmentIndex: number | null;
+
+  // Phase 5 backward-compatibility properties:
+  readonly sampleCount: number;
+  readonly totalDistanceM: number;
+  readonly minElevationMsl: number | null;
   readonly maxElevationMsl: number | null;
-  /** Cumulative vertical climb in meters (sum of positive Δh) */
   readonly elevationGainM: number | null;
-  /** Cumulative vertical descent in meters (sum of negative Δh magnitudes) */
   readonly elevationLossM: number | null;
-  /** Length-weighted mean corridor alignment gradient in degrees: (Σ gradientDegrees_i * d_i) / Σ d_i */
   readonly meanRouteGradientDegrees: number | null;
-  /** Length-weighted mean corridor alignment gradient in percent: (Σ |Δh_i|) / (Σ d_i) * 100 */
   readonly meanRouteGradientPercent: number | null;
-  /** Maximum localized segment gradient in degrees along control polyline */
   readonly peakRouteGradientDegrees: number | null;
-  /** Maximum localized segment gradient in percent along control polyline */
   readonly peakRouteGradientPercent: number | null;
-  /** Array of individual analyzed segments */
-  readonly segments: readonly TerrainSegment[];
+  readonly segments: readonly TerrainProfileSegment[];
 }
 
 /**
- * Full terrain profile payload including raw points and calculated metrics.
+ * Structured Terrain Profile representation (Phase 6A).
+ * Encapsulates ordered samples with cumulative chainage, segments, and profile metrics.
+ */
+export interface TerrainProfile {
+  readonly samples: readonly TerrainProfileSample[];
+  readonly segments: readonly TerrainProfileSegment[];
+  readonly metrics: TerrainProfileMetrics;
+}
+
+/**
+ * Full terrain profile payload including raw points, calculated metrics, and structured profile.
  */
 export interface TerrainProfileData {
   readonly points: readonly EnvironmentalElevationPoint[];
   readonly metrics: TerrainProfileMetrics;
+  readonly profile: TerrainProfile;
   readonly source: string;
   readonly fetchedAt: string;
 }
@@ -171,6 +227,8 @@ export interface BasicTerrainData {
   elevation: EnvironmentalElevationData;
   /** Dense DEM-derived corridor alignment profile metrics along the control polyline */
   routeProfile?: TerrainProfileMetrics | null;
+  /** Structured terrain profile with samples, segments, and metrics (Phase 6A) */
+  terrainProfile?: TerrainProfile | null;
   /** Provisional corridor representative gradient in degrees */
   slopeDegrees?: number | null;
   /** Slope aspect direction, e.g. "NW", "S" (architectural placeholder) */

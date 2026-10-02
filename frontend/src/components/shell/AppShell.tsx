@@ -3,29 +3,53 @@ import clsx from 'clsx';
 import { Layers } from 'lucide-react';
 import { TopNav, NavItemKey } from './TopNav';
 import { CorridorStatus } from './CorridorStatus';
+import { Footer } from './Footer';
+import { RiskAssessment } from '../../services/risk/types';
 import './AppShell.css';
 
 export interface AppShellProps {
   children?: React.ReactNode;
   activeNav?: NavItemKey;
   onNavClick?: (key: NavItemKey) => void;
+  systemStatusText?: string;
+  riskAssessment?: RiskAssessment | null;
+  isLoadingRisk?: boolean;
+  isRiskError?: boolean;
+  showCorridorStatus?: boolean;
   className?: string;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
   children,
-  activeNav = 'overview',
+  activeNav = 'home',
   onNavClick,
+  systemStatusText,
+  riskAssessment,
+  isLoadingRisk,
+  isRiskError,
+  showCorridorStatus,
   className,
 }) => {
+  // Determine if corridor status bar should be shown
+  const shouldShowCorridor =
+    showCorridorStatus !== undefined
+      ? showCorridorStatus
+      : activeNav === 'map' || activeNav === 'corridor';
+
   return (
     <div className={clsx('dh-app-shell', className)}>
-      {/* 1. Global Product Navigation Header */}
-      <TopNav activeNav={activeNav} onNavClick={onNavClick} />
+      {/* 1. Global Product Navigation Header (Single source of truth for Risk) */}
+      <TopNav
+        activeNav={activeNav}
+        onNavClick={onNavClick}
+        systemStatusText={systemStatusText}
+        riskAssessment={riskAssessment}
+        isLoadingRisk={isLoadingRisk}
+        isRiskError={isRiskError}
+      />
 
-
-      {/* 2. Corridor Context Status Frame */}
-      <CorridorStatus />
+      {/* 2. Contextual Corridor Status Bar */}
+      {shouldShowCorridor && <CorridorStatus />}
 
       {/* 3. Main Application Content Viewport */}
       <main className="dh-app-shell__main" id="main-content">
@@ -48,6 +72,9 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
         )}
       </main>
+
+      {/* 4. Global Footer */}
+      <Footer onNavigate={(tab) => onNavClick?.(tab as NavItemKey)} />
     </div>
   );
 };

@@ -1,0 +1,53 @@
+/* ==============================================================================
+   EMPTY STATE COMPONENT
+   ============================================================================== */
+
+.dh-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  background-color: var(--bg-surface-muted);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.dh-empty-state__icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.dh-empty-state__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.dh-empty-state__description {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  max-width: 380px;
+  margin: 0 0 var(--space-4) 0;
+  line-height: 1.45;
+}
+
+.dh-empty-state__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

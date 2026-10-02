@@ -1,0 +1,147 @@
+/* ==============================================================================
+   RISK CARD COMPONENT STYLES
+   ============================================================================== */
+
+.dh-risk-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.dh-risk-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.dh-risk-card__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dh-risk-card__subtitle {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dh-risk-card__score-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+}
+
+.dh-risk-card__score-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.dh-risk-card__score-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.dh-risk-card__bar-track {
+  height: 8px;
+  background-color: var(--bg-surface-muted);
+  border-radius: var(--radius-full);
+  display: flex;
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.dh-risk-card__bar-segment {
+  height: 100%;
+  transition: width var(--transition-normal);
+}
+
+.dh-risk-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .dh-risk-card__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dh-risk-card__tier-item {
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.dh-risk-card__tier-item--clickable {
+  cursor: pointer;
+}
+
+.dh-risk-card__tier-item--clickable:hover {
+  background-color: var(--bg-surface-elevated);
+}
+
+.dh-risk-card__tier-item--active {
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--border-strong);
+}
+
+.dh-risk-card__tier-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.dh-risk-card__tier-icon {
+  display: flex;
+  align-items: center;
+}
+
+.dh-risk-card__tier-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.dh-risk-card__tier-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.dh-risk-card__tier-desc {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}

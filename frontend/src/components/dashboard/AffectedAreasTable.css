@@ -1,0 +1,177 @@
+/* ==============================================================================
+   AFFECTED AREAS TABLE COMPONENT STYLES
+   ============================================================================== */
+
+.dh-affected-table-wrapper {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.dh-affected-table__header {
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-elevated);
+}
+
+.dh-affected-table__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dh-affected-table__subtitle {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dh-affected-table__count-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+}
+
+.dh-affected-table__scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.dh-affected-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+}
+
+.dh-affected-table th {
+  background-color: var(--bg-surface-muted);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.dh-affected-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.dh-affected-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.dh-affected-table__sector-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dh-affected-table__name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-affected-table__hwy-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  padding: 1px 4px;
+  color: var(--text-muted);
+}
+
+.dh-affected-table__district {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dh-affected-table__mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.dh-affected-table__hazard {
+  max-width: 220px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.dh-affected-table__status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  letter-spacing: 0.04em;
+}
+
+.dh-affected-table__status--normal {
+  color: var(--risk-low);
+  background-color: var(--risk-low-bg);
+  border: 1px solid var(--risk-low-border);
+}
+
+.dh-affected-table__status--caution {
+  color: var(--risk-moderate);
+  background-color: var(--risk-moderate-bg);
+  border: 1px solid var(--risk-moderate-border);
+}
+
+.dh-affected-table__status--restricted {
+  color: var(--risk-severe);
+  background-color: var(--risk-severe-bg);
+  border: 1px solid var(--risk-severe-border);
+}
+
+.dh-affected-table__status--standby {
+  color: var(--text-muted);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.dh-affected-table__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-primary);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.dh-affected-table__action-btn:hover {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-border);
+}

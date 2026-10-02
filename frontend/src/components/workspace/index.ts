@@ -6,3 +6,6 @@ export type { MapViewportProps } from './MapViewport';
 
 export { AnalysisPanel } from './AnalysisPanel';
 export type { AnalysisPanelProps } from './AnalysisPanel';
+
+export { SegmentInspection } from './SegmentInspection';
+export type { SegmentInspectionProps } from './SegmentInspection';

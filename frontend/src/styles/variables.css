@@ -4,34 +4,36 @@
    ============================================================================== */
 
 :root {
-  /* Surface & Background Hierarchy */
-  --bg-app: #080d18;              /* Base canvas / map underlay */
-  --bg-surface: #0e1626;          /* Primary panels and containers */
-  --bg-surface-elevated: #152238; /* Floating cards, dropdowns, tooltips */
-  --bg-surface-muted: #0a101d;    /* Inset areas, data tables, metrics wells */
+  /* Surface & Background Hierarchy (UXMagic Aligned) */
+  --bg-app: #0b1420;              /* Base canvas / map underlay */
+  --bg-surface: #101e2b;          /* Primary panels and containers */
+  --bg-surface-elevated: #152434; /* Floating cards, dropdowns, tooltips */
+  --bg-surface-muted: #101d2a;    /* Inset areas, data tables, metrics wells */
+  --bg-accent: #1d3344;           /* Active nav and emphasized highlight regions */
 
   /* Text & Content Tokens */
-  --text-primary: #f8fafc;        /* High-contrast headings and primary labels */
-  --text-secondary: #94a3b8;      /* Body copy, descriptions, navigation labels */
-  --text-muted: #64748b;          /* Metadata, units, captions, timestamps */
-  --text-disabled: #334155;       /* Inactive controls, placeholder text */
+  --text-primary: #e7f0f4;        /* High-contrast headings and primary labels */
+  --text-secondary: #9fb3c2;      /* Body copy, descriptions, navigation labels */
+  --text-muted: #748699;          /* Metadata, units, captions, timestamps */
+  --text-disabled: #3d5061;       /* Inactive controls, placeholder text */
 
   /* Border Tokens */
-  --border-subtle: rgba(148, 163, 184, 0.12); /* Division lines, subtle card edges */
-  --border-default: rgba(148, 163, 184, 0.22);/* Standard container outlines */
-  --border-strong: rgba(148, 163, 184, 0.38); /* Focus states, emphasized borders */
+  --border-subtle: rgba(42, 66, 81, 0.45); /* Division lines, subtle card edges */
+  --border-default: #2a4251;               /* Standard container outlines */
+  --border-strong: #3d5c70;                /* Focus states, emphasized borders */
 
-  /* Primary Technical Accent (Glacier Cyan / Marine Slate) */
-  --accent-primary: #0ea5e9;
-  --accent-primary-hover: #0284c7;
-  --accent-bg: rgba(14, 165, 233, 0.12);
-  --accent-border: rgba(14, 165, 233, 0.32);
+  /* Primary Technical Accent (UXMagic Glacier Cyan) */
+  --accent-primary: #64b7d8;
+  --accent-primary-hover: #4ea4c7;
+  --accent-bg: rgba(100, 183, 216, 0.12);
+  --accent-border: rgba(100, 183, 216, 0.32);
+  --ring: #64b7d8;
 
-  /* Locked Geotechnical Hazard Risk Colors */
+  /* Locked Geotechnical Hazard Risk Colors (UXMagic & Operational Norm) */
   /* LOW: 0.0 - 24.9 */
-  --risk-low: #10b981;
-  --risk-low-bg: rgba(16, 185, 129, 0.12);
-  --risk-low-border: rgba(16, 185, 129, 0.32);
+  --risk-low: #53b99b;
+  --risk-low-bg: rgba(83, 185, 155, 0.12);
+  --risk-low-border: rgba(83, 185, 155, 0.32);
 
   /* MODERATE: 25.0 - 49.9 */
   --risk-moderate: #eab308;
@@ -44,13 +46,14 @@
   --risk-high-border: rgba(249, 115, 22, 0.32);
 
   /* SEVERE: 75.0 - 100.0 */
-  --risk-severe: #ef4444;
-  --risk-severe-bg: rgba(239, 68, 68, 0.14);
-  --risk-severe-border: rgba(239, 68, 68, 0.36);
+  --risk-severe: #e5675f;
+  --risk-severe-bg: rgba(229, 103, 95, 0.14);
+  --risk-severe-border: rgba(229, 103, 95, 0.36);
 
   /* Typography System */
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-heading: 'Manrope', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Type Scale */
   --text-xs: 0.75rem;     /* 12px - badges, metadata, captions */
@@ -60,6 +63,7 @@
   --text-lg: 1.25rem;     /* 20px - section headings */
   --text-xl: 1.5rem;      /* 24px - modal titles, prominent values */
   --text-2xl: 1.875rem;   /* 30px - page titles */
+  --text-3xl: 2.25rem;    /* 36px - hero display */
 
   /* Spacing Scale */
   --space-1: 0.25rem;  /* 4px */
@@ -71,16 +75,19 @@
   --space-8: 2rem;     /* 32px */
   --space-10: 2.5rem;  /* 40px */
 
-  /* Controlled Radii (Restrained, engineering feel) */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  /* Controlled Radii (UXMagic 12px / 0.75rem baseline) */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Depth & Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 10px 30px -8px rgba(15, 23, 42, 0.25);
+  --shadow-theme: 0 10px 30px -8px rgba(15, 23, 42, 0.12);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);

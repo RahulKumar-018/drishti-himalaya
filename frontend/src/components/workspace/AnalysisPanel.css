@@ -685,3 +685,296 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==============================================================================
+   WHAT-IF RAINFALL SCENARIO CARD (PHASE 6)
+   ============================================================================== */
+
+.dh-analysis-panel__scenario-card {
+  border-color: rgba(14, 165, 233, 0.3) !important;
+}
+
+.dh-analysis-panel__scenario-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dh-analysis-panel__slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.dh-analysis-panel__slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dh-analysis-panel__slider-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.dh-analysis-panel__slider-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.dh-analysis-panel__slider-input {
+  width: 100%;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+  margin: 4px 0;
+}
+
+.dh-analysis-panel__slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.dh-analysis-panel__preset-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dh-analysis-panel__preset-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__preset-btn--active {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+/* Comparison Grid */
+.dh-analysis-panel__scenario-comparison {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.dh-analysis-panel__scenario-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dh-analysis-panel__scenario-col--sim {
+  background-color: rgba(14, 165, 233, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+}
+
+.dh-analysis-panel__scenario-col-title {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 2px;
+}
+
+.dh-analysis-panel__scenario-vs {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__scenario-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dh-analysis-panel__scenario-stat-sub {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__scenario-stat-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__scenario-stat-val--prominent {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dh-analysis-panel__scenario-tier-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  align-self: flex-start;
+}
+
+.dh-analysis-panel__scenario-driver {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.dh-analysis-panel__scenario-driver-label {
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__scenario-driver-val {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__scenario-delta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+
+.dh-analysis-panel__scenario-delta--up {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.dh-analysis-panel__scenario-delta--down {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.12);
+}
+
+.dh-analysis-panel__scenario-factors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.dh-analysis-panel__scenario-factors-heading {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__scenario-factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dh-analysis-panel__scenario-factor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+}
+
+.dh-analysis-panel__scenario-factor-name {
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+}
+
+.dh-analysis-panel__scenario-factor-contrib {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__scenario-factor-wt {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: 3px;
+}
+
+.dh-analysis-panel__scenario-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dh-analysis-panel__reset-btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.dh-analysis-panel__sim-active-note {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--accent-primary);
+  font-style: italic;
+}
+
+.dh-analysis-panel__risk-caveat-box--sim {
+  background-color: rgba(14, 165, 233, 0.05);
+  border-color: rgba(14, 165, 233, 0.22);
+}
+
+.dh-analysis-panel__risk-caveat-box--sim .dh-analysis-panel__risk-caveat-icon {
+  color: var(--accent-primary);
+}
+

@@ -1,0 +1,214 @@
+/* ==============================================================================
+   RISK FACTOR CARD COMPONENT STYLES
+   ============================================================================== */
+
+.dh-factor-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-sizing: border-box;
+}
+
+.dh-factor-card--active {
+  border-color: var(--border-default);
+}
+
+.dh-factor-card--future {
+  border: 1px dashed var(--border-subtle);
+  background-color: rgba(14, 22, 38, 0.6);
+}
+
+.dh-factor-card--unavailable {
+  border-color: rgba(239, 68, 68, 0.3);
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.dh-factor-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dh-factor-card__icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-factor-card__title-lockup {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dh-factor-card__category {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dh-factor-card__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dh-factor-card__badge-wrapper {
+  flex-shrink: 0;
+}
+
+.dh-factor-card__badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+  display: inline-block;
+}
+
+.dh-factor-card__badge--active {
+  color: var(--risk-low);
+  background-color: var(--risk-low-bg);
+  border: 1px solid var(--risk-low-border);
+}
+
+.dh-factor-card__badge--future {
+  color: var(--accent-primary);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.dh-factor-card__badge--unavailable {
+  color: var(--risk-severe);
+  background-color: var(--risk-severe-bg);
+  border: 1px solid var(--risk-severe-border);
+}
+
+.dh-factor-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .dh-factor-card__metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.dh-factor-card__metric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dh-factor-card__metric-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dh-factor-card__score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.dh-factor-card__score-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dh-factor-card__score-denom {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.dh-factor-card__metric-val {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.dh-factor-card__metric-val--mono {
+  font-family: var(--font-mono);
+}
+
+.dh-factor-card__metric-val--accent {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.dh-factor-card__gauge-track {
+  height: 4px;
+  background-color: var(--bg-surface-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.dh-factor-card__gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--risk-low) 0%, var(--risk-moderate) 50%, var(--risk-severe) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.dh-factor-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dh-factor-card__ref-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 11px;
+}
+
+.dh-factor-card__ref-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.dh-factor-card__ref-text {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.dh-factor-card__desc {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}

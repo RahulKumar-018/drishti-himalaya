@@ -1,0 +1,179 @@
+/* ==============================================================================
+   RISK FORMULA VIEWER COMPONENT STYLES
+   ============================================================================== */
+
+.dh-formula-viewer {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dh-formula-viewer__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dh-formula-viewer__equation-box {
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dh-formula-viewer__eq-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  letter-spacing: 0.05em;
+}
+
+.dh-formula-viewer__formula {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: #38bdf8;
+  overflow-x: auto;
+}
+
+.dh-formula-viewer__sub-formula {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-left: var(--space-2);
+}
+
+.dh-formula-viewer__note {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: var(--space-1) 0 0 0;
+}
+
+.dh-formula-viewer__pipeline {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .dh-formula-viewer__pipeline {
+    grid-template-columns: 1fr;
+  }
+
+  .dh-formula-viewer__pipeline-arrow {
+    display: none;
+  }
+}
+
+.dh-formula-viewer__pipeline-step {
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dh-formula-viewer__pipeline-step--active {
+  border-color: var(--risk-low);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-surface-muted) 100%);
+}
+
+.dh-formula-viewer__pipeline-step--upcoming {
+  border: 1px dashed var(--border-strong);
+}
+
+.dh-formula-viewer__step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dh-formula-viewer__step-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--risk-low);
+  letter-spacing: 0.06em;
+}
+
+.dh-formula-viewer__step-badge--ml {
+  color: var(--accent-primary);
+}
+
+.dh-formula-viewer__step-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dh-formula-viewer__step-desc {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.dh-formula-viewer__step-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--risk-low);
+  padding-top: var(--space-1);
+}
+
+.dh-formula-viewer__pipeline-step--upcoming .dh-formula-viewer__step-status {
+  color: var(--accent-primary);
+}
+
+.dh-formula-viewer__pipeline-arrow {
+  font-size: var(--text-lg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.dh-formula-viewer__api-preview {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.dh-formula-viewer__api-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-surface-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.dh-formula-viewer__code-block {
+  padding: var(--space-3);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #93c5fd;
+  line-height: 1.4;
+  overflow-x: auto;
+}

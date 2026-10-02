@@ -9,3 +9,6 @@ export * from './types';
 export * from './riskConfig';
 export * from './featureExtractor';
 export * from './deterministicRiskEngine';
+export * from './segmentRiskService';
+export * from './scenarioService';
+

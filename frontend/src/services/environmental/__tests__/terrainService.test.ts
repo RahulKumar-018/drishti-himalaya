@@ -11,6 +11,7 @@ import {
   haversineDistance,
   densifyCoordinates,
   computeRouteGradientMetrics,
+  buildTerrainProfile,
 } from '../terrainService';
 import { PILOT_CORRIDOR_COORDINATES } from '../corridorConstants';
 
@@ -382,4 +383,362 @@ describe('TerrainService - Batching & Elevation Mapping Engine', () => {
     }
   });
 });
+
+describe('TerrainService - Phase 6A Terrain Profile & Segment Analysis', () => {
+  // 1. Empty input
+  it('1. should construct an empty profile with zero distance and null metrics for empty input', () => {
+    const profile = buildTerrainProfile([]);
+
+    assert.equal(profile.samples.length, 0);
+    assert.equal(profile.segments.length, 0);
+    assert.equal(profile.metrics.totalDistance, 0);
+    assert.equal(profile.metrics.minElevation, null);
+    assert.equal(profile.metrics.maxElevation, null);
+    assert.equal(profile.metrics.elevationGain, null);
+    assert.equal(profile.metrics.elevationLoss, null);
+    assert.equal(profile.metrics.meanGradientPercent, null);
+    assert.equal(profile.metrics.meanGradientDegrees, null);
+    assert.equal(profile.metrics.peakGradientPercent, null);
+    assert.equal(profile.metrics.peakGradientDegrees, null);
+    assert.equal(profile.metrics.peakGradientSegmentIndex, null);
+  });
+
+  // 2. Single sample
+  it('2. should construct a single-sample profile with 0 distance and null segment metrics', () => {
+    const profile = buildTerrainProfile([{ latitude: 30.1, longitude: 78.2, elevation: 450 }]);
+
+    assert.equal(profile.samples.length, 1);
+    assert.equal(profile.samples[0].distanceFromStart, 0);
+    assert.equal(profile.samples[0].coordinate.latitude, 30.1);
+    assert.equal(profile.samples[0].coordinate.longitude, 78.2);
+    assert.equal(profile.samples[0].elevation, 450);
+    assert.equal(profile.segments.length, 0);
+    assert.equal(profile.metrics.totalDistance, 0);
+    assert.equal(profile.metrics.minElevation, 450);
+    assert.equal(profile.metrics.maxElevation, 450);
+    assert.equal(profile.metrics.elevationGain, null);
+    assert.equal(profile.metrics.elevationLoss, null);
+    assert.equal(profile.metrics.meanGradientPercent, null);
+    assert.equal(profile.metrics.meanGradientDegrees, null);
+    assert.equal(profile.metrics.peakGradientPercent, null);
+    assert.equal(profile.metrics.peakGradientDegrees, null);
+    assert.equal(profile.metrics.peakGradientSegmentIndex, null);
+  });
+
+  // 3. Multiple samples
+  it('3. should construct structured profile with matching samples and segments for multiple points', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.00, elevation: 500 },
+      { latitude: 30.01, longitude: 78.00, elevation: 550 },
+      { latitude: 30.02, longitude: 78.00, elevation: 520 },
+      { latitude: 30.03, longitude: 78.00, elevation: 600 },
+    ];
+    const profile = buildTerrainProfile(points);
+
+    assert.equal(profile.samples.length, 4);
+    assert.equal(profile.segments.length, 3);
+  });
+
+  // 4. Correct cumulative distance
+  it('4. should calculate strictly monotonic cumulative distance from start for each sample', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.00, elevation: 500 },
+      { latitude: 30.01, longitude: 78.00, elevation: 550 },
+      { latitude: 30.02, longitude: 78.00, elevation: 520 },
+      { latitude: 30.03, longitude: 78.00, elevation: 600 },
+    ];
+    const profile = buildTerrainProfile(points);
+
+    assert.equal(profile.samples[0].distanceFromStart, 0);
+    assert.ok(profile.samples[1].distanceFromStart > profile.samples[0].distanceFromStart);
+    assert.ok(profile.samples[2].distanceFromStart > profile.samples[1].distanceFromStart);
+    assert.ok(profile.samples[3].distanceFromStart > profile.samples[2].distanceFromStart);
+
+    // Verify cumulative distance equals sum of segment horizontal distances
+    const segSum1 = profile.segments[0].horizontalDistance;
+    const segSum2 = segSum1 + profile.segments[1].horizontalDistance;
+    const segSum3 = segSum2 + profile.segments[2].horizontalDistance;
+
+    assert.ok(Math.abs(profile.samples[1].distanceFromStart - segSum1) <= 0.2);
+    assert.ok(Math.abs(profile.samples[2].distanceFromStart - segSum2) <= 0.2);
+    assert.ok(Math.abs(profile.samples[3].distanceFromStart - segSum3) <= 0.2);
+    assert.ok(Math.abs(profile.metrics.totalDistance - segSum3) <= 0.2);
+  });
+
+  // 5. Correct segment count
+  it('5. should always create exactly N - 1 segments for N samples', () => {
+    const count = 8;
+    const points = Array.from({ length: count }, (_, i) => ({
+      latitude: 30.0 + i * 0.005,
+      longitude: 78.0 + i * 0.005,
+      elevation: 400 + i * 50,
+    }));
+    const profile = buildTerrainProfile(points);
+
+    assert.equal(profile.samples.length, count);
+    assert.equal(profile.segments.length, count - 1);
+  });
+
+  // 6. Correct segment start/end indices
+  it('6. should correctly assign startIndex, endIndex, and chainage to each segment', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.00, elevation: 500 },
+      { latitude: 30.01, longitude: 78.00, elevation: 550 },
+      { latitude: 30.02, longitude: 78.00, elevation: 520 },
+      { latitude: 30.03, longitude: 78.00, elevation: 600 },
+    ];
+    const profile = buildTerrainProfile(points);
+
+    for (let i = 0; i < profile.segments.length; i++) {
+      const seg = profile.segments[i];
+      assert.equal(seg.startIndex, i);
+      assert.equal(seg.endIndex, i + 1);
+      assert.equal(seg.startDistance, profile.samples[i].distanceFromStart);
+      assert.equal(seg.endDistance, profile.samples[i + 1].distanceFromStart);
+      assert.ok(seg.endDistance > seg.startDistance);
+    }
+  });
+
+  // 7. Correct min elevation
+  it('7. should accurately determine min elevation across all valid samples', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.0, elevation: 600 },
+      { latitude: 30.01, longitude: 78.0, elevation: 350 },
+      { latitude: 30.02, longitude: 78.0, elevation: 1200 },
+      { latitude: 30.03, longitude: 78.0, elevation: 800 },
+    ];
+    const profile = buildTerrainProfile(points);
+    assert.equal(profile.metrics.minElevation, 350);
+  });
+
+  // 8. Correct max elevation
+  it('8. should accurately determine max elevation across all valid samples', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.0, elevation: 600 },
+      { latitude: 30.01, longitude: 78.0, elevation: 350 },
+      { latitude: 30.02, longitude: 78.0, elevation: 1200 },
+      { latitude: 30.03, longitude: 78.0, elevation: 800 },
+    ];
+    const profile = buildTerrainProfile(points);
+    assert.equal(profile.metrics.maxElevation, 1200);
+  });
+
+  // 9. Correct elevation gain
+  it('9. should correctly sum only positive elevation changes for elevationGain', () => {
+    // 600 -> 350 (-250, gain=0)
+    // 350 -> 1200 (+850, gain=850)
+    // 1200 -> 800 (-400, gain=0)
+    const points = [
+      { latitude: 30.00, longitude: 78.0, elevation: 600 },
+      { latitude: 30.01, longitude: 78.0, elevation: 350 },
+      { latitude: 30.02, longitude: 78.0, elevation: 1200 },
+      { latitude: 30.03, longitude: 78.0, elevation: 800 },
+    ];
+    const profile = buildTerrainProfile(points);
+    assert.equal(profile.metrics.elevationGain, 850);
+  });
+
+  // 10. Correct elevation loss
+  it('10. should correctly sum negative elevation changes as positive magnitude for elevationLoss', () => {
+    // 600 -> 350 (loss = 250)
+    // 350 -> 1200 (loss = 0)
+    // 1200 -> 800 (loss = 400)
+    // Total loss = 250 + 400 = 650
+    const points = [
+      { latitude: 30.00, longitude: 78.0, elevation: 600 },
+      { latitude: 30.01, longitude: 78.0, elevation: 350 },
+      { latitude: 30.02, longitude: 78.0, elevation: 1200 },
+      { latitude: 30.03, longitude: 78.0, elevation: 800 },
+    ];
+    const profile = buildTerrainProfile(points);
+    assert.equal(profile.metrics.elevationLoss, 650);
+  });
+
+  // 11. Gain/loss invariant
+  it('11. should preserve telescoping elevation invariant: elevationGain - elevationLoss === last - first', () => {
+    const points = [
+      { latitude: 30.00, longitude: 78.0, elevation: 600 },
+      { latitude: 30.01, longitude: 78.0, elevation: 350 },
+      { latitude: 30.02, longitude: 78.0, elevation: 1200 },
+      { latitude: 30.03, longitude: 78.0, elevation: 800 },
+    ];
+    const profile = buildTerrainProfile(points);
+    const netChange = (profile.metrics.elevationGain ?? 0) - (profile.metrics.elevationLoss ?? 0);
+    const endpointChange = points[points.length - 1].elevation - points[0].elevation;
+
+    assert.equal(netChange, endpointChange); // 850 - 650 === 800 - 600 (200 === 200)
+
+    // Multi-point synthetic random walk
+    const walkPoints = [
+      { latitude: 30.00, longitude: 78.00, elevation: 320 },
+      { latitude: 30.01, longitude: 78.01, elevation: 490 },
+      { latitude: 30.02, longitude: 78.02, elevation: 410 },
+      { latitude: 30.03, longitude: 78.03, elevation: 780 },
+      { latitude: 30.04, longitude: 78.04, elevation: 650 },
+      { latitude: 30.05, longitude: 78.05, elevation: 1100 },
+      { latitude: 30.06, longitude: 78.06, elevation: 920 },
+      { latitude: 30.07, longitude: 78.07, elevation: 1450 },
+    ];
+    const walkProfile = buildTerrainProfile(walkPoints);
+    const walkNet = (walkProfile.metrics.elevationGain ?? 0) - (walkProfile.metrics.elevationLoss ?? 0);
+    const walkEndpoints = walkPoints[walkPoints.length - 1].elevation - walkPoints[0].elevation;
+
+    assert.ok(
+      Math.abs(walkNet - walkEndpoints) < 1e-6,
+      `Invariant failed: net=${walkNet}, endpoint=${walkEndpoints}`
+    );
+  });
+
+  // 12. Correct gradient percentage
+  it('12. should calculate gradient magnitude percentage correctly: abs(deltaH) / horizDist * 100', () => {
+    // 0.009 deg lat ≈ 1000.75m distance
+    const p1 = { latitude: 30.0, longitude: 78.0, elevation: 500 };
+    const p2 = { latitude: 30.009, longitude: 78.0, elevation: 600 };
+    const profile = buildTerrainProfile([p1, p2]);
+
+    assert.equal(profile.segments.length, 1);
+    const seg = profile.segments[0];
+    assert.equal(seg.elevationChange, 100);
+    assert.ok(seg.gradientPercent !== null && seg.gradientPercent > 9.9 && seg.gradientPercent < 10.1);
+
+    // Negative elevation change must still report a positive gradient magnitude
+    const pDown = { latitude: 30.009, longitude: 78.0, elevation: 400 };
+    const profileDown = buildTerrainProfile([p1, pDown]);
+    const segDown = profileDown.segments[0];
+    assert.equal(segDown.elevationChange, -100);
+    assert.ok(segDown.gradientPercent !== null && segDown.gradientPercent > 9.9 && segDown.gradientPercent < 10.1);
+  });
+
+  // 13. Correct gradient degrees
+  it('13. should calculate gradient degrees correctly via atan(gradientPercent / 100)', () => {
+    const p1 = { latitude: 30.0, longitude: 78.0, elevation: 500 };
+    const p2 = { latitude: 30.009, longitude: 78.0, elevation: 600 };
+    const profile = buildTerrainProfile([p1, p2]);
+
+    const seg = profile.segments[0];
+    // 100m climb over ~1000.75m -> atan(100/1000.75) * 180 / π ≈ 5.71°
+    assert.ok(seg.gradientDegrees !== null && seg.gradientDegrees > 5.6 && seg.gradientDegrees < 5.8);
+    assert.equal(seg.gradientDegrees, 5.71);
+  });
+
+  // 14. Peak gradient identification
+  it('14. should identify peak gradient magnitude across both uphill and downhill segments', () => {
+    const points = [
+      { latitude: 30.000, longitude: 78.0, elevation: 500 },
+      { latitude: 30.009, longitude: 78.0, elevation: 520 }, // ~1000m, +20m climb  (~2.0% grade)
+      { latitude: 30.018, longitude: 78.0, elevation: 340 }, // ~1000m, -180m descent (~18.0% grade - STEEPEST)
+      { latitude: 30.027, longitude: 78.0, elevation: 390 }, // ~1000m, +50m climb  (~5.0% grade)
+    ];
+    const profile = buildTerrainProfile(points);
+
+    assert.ok(profile.metrics.peakGradientPercent !== null);
+    assert.ok(
+      profile.metrics.peakGradientPercent > 17.5 && profile.metrics.peakGradientPercent < 18.5,
+      `Expected ~18.0%, got ${profile.metrics.peakGradientPercent}%`
+    );
+    assert.ok(
+      profile.metrics.peakGradientDegrees !== null && profile.metrics.peakGradientDegrees > 10.0,
+      `Expected >10°, got ${profile.metrics.peakGradientDegrees}°`
+    );
+  });
+
+  // 15. Correct peak segment index
+  it('15. should record the exact segment index producing the peak gradient', () => {
+    const points = [
+      { latitude: 30.000, longitude: 78.0, elevation: 500 },
+      { latitude: 30.009, longitude: 78.0, elevation: 520 }, // Segment 0
+      { latitude: 30.018, longitude: 78.0, elevation: 340 }, // Segment 1 - PEAK (steep descent)
+      { latitude: 30.027, longitude: 78.0, elevation: 390 }, // Segment 2
+    ];
+    const profile = buildTerrainProfile(points);
+
+    assert.equal(profile.metrics.peakGradientSegmentIndex, 1);
+    assert.equal(
+      profile.segments[profile.metrics.peakGradientSegmentIndex!].gradientPercent,
+      profile.metrics.peakGradientPercent
+    );
+  });
+
+  // 16. Mean gradient calculation
+  it('16. should calculate length-weighted corridor mean gradient and angle using atan(pct/100)', () => {
+    // Short steep segment: ~100m dist, 30m climb (~30% grade = 16.7°)
+    // Long gentle segment: ~10,000m dist, 20m climb (~0.2% grade = 0.11°)
+    const points = [
+      { latitude: 30.000, longitude: 78.0, elevation: 100 },
+      { latitude: 30.0009, longitude: 78.0, elevation: 130 },
+      { latitude: 30.0909, longitude: 78.0, elevation: 150 },
+    ];
+    const profile = buildTerrainProfile(points);
+
+    // Total distance ≈ 10,100m. Total delta sum = 30 + 20 = 50m.
+    // Length-weighted percent ≈ (50 / 10100) * 100 ≈ 0.50%
+    assert.ok(profile.metrics.meanGradientPercent !== null);
+    assert.ok(
+      profile.metrics.meanGradientPercent < 1.0,
+      `Expected < 1.0%, got ${profile.metrics.meanGradientPercent}%`
+    );
+
+    // Angle representation: atan(meanGradientPercent / 100) converted to degrees
+    const expectedDeg = Math.round(Math.atan(profile.metrics.meanGradientPercent / 100) * (180 / Math.PI) * 100) / 100;
+    assert.equal(profile.metrics.meanGradientDegrees, expectedDeg);
+
+    // Explicitly verify it is NOT the arithmetic average of segment angles:
+    // (16.7° + 0.11°) / 2 ≈ 8.4°
+    assert.ok(
+      profile.metrics.meanGradientDegrees! < 1.0,
+      `Mean gradient was ${profile.metrics.meanGradientDegrees}°, should NOT be arithmetic average (~8.4°)`
+    );
+  });
+
+  // 17. Zero-distance segment
+  it('17. should handle zero-distance adjacent coordinates safely without division by zero', () => {
+    const identicalPoints = [
+      { latitude: 30.0869, longitude: 78.2676, elevation: 350 },
+      { latitude: 30.0869, longitude: 78.2676, elevation: 350 }, // Duplicate coordinate
+      { latitude: 30.1347, longitude: 78.3888, elevation: 420 },
+    ];
+    const profile = buildTerrainProfile(identicalPoints);
+
+    assert.equal(profile.segments.length, 2);
+    const zeroSeg = profile.segments[0];
+    assert.equal(zeroSeg.horizontalDistance, 0);
+    assert.equal(zeroSeg.gradientPercent, 0);
+    assert.equal(zeroSeg.gradientDegrees, 0);
+
+    assert.ok(Number.isFinite(profile.metrics.totalDistance));
+    assert.ok(Number.isFinite(profile.metrics.meanGradientPercent));
+    assert.ok(Number.isFinite(profile.metrics.meanGradientDegrees));
+  });
+
+  // 18. Invalid/non-finite elevation handling
+  it('18. should safely filter invalid, out-of-range, and NaN elevations without inventing fallback numbers', () => {
+    const dirtyPoints = [
+      { latitude: 30.00, longitude: 78.0, elevation: 400 },
+      { latitude: 30.01, longitude: 78.0, elevation: -50 },       // Invalid: < 0
+      { latitude: 30.02, longitude: 78.0, elevation: 12000 },     // Invalid: > 9000
+      { latitude: 30.03, longitude: 78.0, elevation: Number.NaN },// Invalid: NaN
+      { latitude: 30.04, longitude: 78.0, elevation: null },      // Invalid: null
+      { latitude: 30.05, longitude: 78.0, elevation: 700 },
+    ];
+    const profile = buildTerrainProfile(dirtyPoints);
+
+    // Samples preserve null elevation for invalid points
+    assert.equal(profile.samples[0].elevation, 400);
+    assert.equal(profile.samples[1].elevation, null);
+    assert.equal(profile.samples[2].elevation, null);
+    assert.equal(profile.samples[3].elevation, null);
+    assert.equal(profile.samples[4].elevation, null);
+    assert.equal(profile.samples[5].elevation, 700);
+
+    // Min and max are computed ONLY from valid terrestrial elevations
+    assert.equal(profile.metrics.minElevation, 400);
+    assert.equal(profile.metrics.maxElevation, 700);
+
+    // Segments with invalid endpoints have null elevationChange and gradient
+    assert.equal(profile.segments[0].elevationChange, null);
+    assert.equal(profile.segments[0].gradientPercent, null);
+    assert.equal(profile.segments[0].gradientDegrees, null);
+  });
+});
+
 

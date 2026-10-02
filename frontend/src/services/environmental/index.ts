@@ -116,6 +116,7 @@ export async function getCorridorEnvironmentalData(
       ? {
           elevation: elevationData,
           routeProfile: routeProfileMetrics,
+          terrainProfile: terrainProfileResult.status === 'success' ? terrainProfileResult.data.profile : null,
           slopeDegrees: routeProfileMetrics?.meanRouteGradientDegrees ?? null,
           aspect: null,
           terrainRuggednessIndex: null,

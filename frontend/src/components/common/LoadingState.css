@@ -1,0 +1,87 @@
+/* ==============================================================================
+   LOADING STATE COMPONENT
+   ============================================================================== */
+
+.dh-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  gap: var(--space-3);
+  box-sizing: border-box;
+}
+
+.dh-loading-state--sm {
+  padding: var(--space-4) var(--space-2);
+  gap: var(--space-2);
+}
+
+.dh-loading-state--lg {
+  padding: var(--space-12, 3rem) var(--space-6);
+  gap: var(--space-4);
+}
+
+.dh-loading-state__spinner-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+}
+
+.dh-loading-state__spinner {
+  animation: dh-spin 1s linear infinite;
+}
+
+.dh-loading-state--sm .dh-loading-state__spinner {
+  width: 18px;
+  height: 18px;
+}
+
+.dh-loading-state--md .dh-loading-state__spinner {
+  width: 28px;
+  height: 28px;
+}
+
+.dh-loading-state--lg .dh-loading-state__spinner {
+  width: 40px;
+  height: 40px;
+}
+
+.dh-loading-state__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dh-loading-state__title {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.dh-loading-state--lg .dh-loading-state__title {
+  font-size: var(--text-base);
+}
+
+.dh-loading-state__message {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 380px;
+  line-height: 1.4;
+}
+
+@keyframes dh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

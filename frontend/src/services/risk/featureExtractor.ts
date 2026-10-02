@@ -280,7 +280,7 @@ export function extractRiskFeatures(
   }
 
   // Append documentation caveats
-  caveats.push('Geotechnical slope stability and historical landslide scars are unassessed pending Phase 5 & 7.');
+  caveats.push('Geotechnical slope stability and historical landslide scars are unassessed in current decision-support prototype.');
   caveats.push('Terrain Slope Gradient represents DEM-derived corridor alignment gradient along control-point chords, not physical road gradient, geotechnical slope stability, or failure probability.');
 
   if (unavailableCount > 0) {
