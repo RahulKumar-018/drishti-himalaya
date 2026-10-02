@@ -14,7 +14,10 @@
 
 .dh-home-hero {
   position: relative;
-  background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.12) 0%, rgba(8, 13, 24, 0.98) 75%), var(--bg-app);
+  background: 
+    radial-gradient(circle at 50% 15%, rgba(14, 165, 233, 0.16) 0%, rgba(11, 20, 32, 0.85) 70%),
+    linear-gradient(180deg, rgba(11, 20, 32, 0.75) 0%, rgba(11, 20, 32, 0.88) 65%, #0b1420 100%),
+    url('/images/hero-himalayas.jpg') center 32% / cover no-repeat;
   border-bottom: 1px solid var(--border-default);
   padding: var(--space-12, 3.5rem) var(--space-6) var(--space-10, 2.5rem);
   overflow: hidden;
@@ -304,26 +307,67 @@
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: var(--space-5);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  overflow: hidden;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .dh-home-context__card:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
+  transform: translateY(-3px);
+  border-color: var(--accent-primary);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.dh-home-context__card-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background-color: var(--bg-surface-elevated);
+}
+
+.dh-home-context__card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  display: block;
+}
+
+.dh-home-context__card:hover .dh-home-context__card-image {
+  transform: scale(1.06);
+}
+
+.dh-home-context__card-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 30, 43, 0.1) 0%, rgba(16, 30, 43, 0.85) 90%, var(--bg-surface) 100%);
+  pointer-events: none;
+}
+
+.dh-home-context__card-content {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
 }
 
 .dh-home-context__icon {
-  width: 44px;
-  height: 44px;
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-2);
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
 }
 
 .dh-home-context__icon--rain {

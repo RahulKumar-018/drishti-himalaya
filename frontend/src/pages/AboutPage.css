@@ -25,13 +25,17 @@
 }
 
 .dh-about-page__header {
-  background-color: var(--bg-surface);
+  position: relative;
+  background: 
+    linear-gradient(180deg, rgba(16, 30, 43, 0.80) 0%, rgba(16, 30, 43, 0.94) 75%, #101e2b 100%),
+    url('/images/hero-himalayas.jpg') center 40% / cover no-repeat;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: var(--space-6);
+  padding: var(--space-8) var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  overflow: hidden;
 }
 
 .dh-about-page__tag {

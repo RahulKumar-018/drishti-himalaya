@@ -165,43 +165,87 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         <div className="dh-home-context__grid">
           <div className="dh-home-context__card">
-            <div className="dh-home-context__icon dh-home-context__icon--rain">
-              <CloudRain size={22} />
+            <div className="dh-home-context__card-image-wrap">
+              <img
+                src="/images/cloudburst-rain.jpg"
+                alt="Intense Himalayan monsoon storm and rainfall over steep valley slopes"
+                className="dh-home-context__card-image"
+                loading="lazy"
+              />
+              <div className="dh-home-context__card-image-overlay" />
+              <div className="dh-home-context__icon dh-home-context__icon--rain">
+                <CloudRain size={20} />
+              </div>
             </div>
-            <h3 className="dh-home-context__card-title">Cloudburst &amp; Monsoon Surges</h3>
-            <p className="dh-home-context__card-text">
-              Sudden localized downpours exceeding 25 mm/h saturate weathered rock joints and mobilize steep talus cones, triggering catastrophic debris torrents across roads within minutes.
-            </p>
+            <div className="dh-home-context__card-content">
+              <h3 className="dh-home-context__card-title">Cloudburst &amp; Monsoon Surges</h3>
+              <p className="dh-home-context__card-text">
+                Sudden localized downpours exceeding 25 mm/h saturate weathered rock joints and mobilize steep talus cones, triggering catastrophic debris torrents across roads within minutes.
+              </p>
+            </div>
           </div>
 
           <div className="dh-home-context__card">
-            <div className="dh-home-context__icon dh-home-context__icon--mountain">
-              <Mountain size={22} />
+            <div className="dh-home-context__card-image-wrap">
+              <img
+                src="/images/mountain-road-cut.jpg"
+                alt="Steep excavated mountain highway cut along rugged Himalayan terrain"
+                className="dh-home-context__card-image"
+                loading="lazy"
+              />
+              <div className="dh-home-context__card-image-overlay" />
+              <div className="dh-home-context__icon dh-home-context__icon--mountain">
+                <Mountain size={20} />
+              </div>
             </div>
-            <h3 className="dh-home-context__card-title">Steep Cut-Slope Geometry</h3>
-            <p className="dh-home-context__card-text">
-              Highway widening cuts the toe of steep mountain slopes (often &gt; 35°), leaving unstable rock blocks susceptible to planar and wedge sliding during moisture spikes.
-            </p>
+            <div className="dh-home-context__card-content">
+              <h3 className="dh-home-context__card-title">Steep Cut-Slope Geometry</h3>
+              <p className="dh-home-context__card-text">
+                Highway widening cuts the toe of steep mountain slopes (often &gt; 35°), leaving unstable rock blocks susceptible to planar and wedge sliding during moisture spikes.
+              </p>
+            </div>
           </div>
 
           <div className="dh-home-context__card">
-            <div className="dh-home-context__icon dh-home-context__icon--layers">
-              <Layers size={22} />
+            <div className="dh-home-context__card-image-wrap">
+              <img
+                src="/images/fault-rock-gorge.jpg"
+                alt="Fractured metamorphic rock formations along deep Himalayan canyon gorge"
+                className="dh-home-context__card-image"
+                loading="lazy"
+              />
+              <div className="dh-home-context__card-image-overlay" />
+              <div className="dh-home-context__icon dh-home-context__icon--layers">
+                <Layers size={20} />
+              </div>
             </div>
-            <h3 className="dh-home-context__card-title">Active Tectonic Fault Zones</h3>
-            <p className="dh-home-context__card-text">
-              Traversing the Main Central Thrust (MCT) and Alaknanda Fault, sheared rock formations like chlorite schists and phyllites possess naturally diminished shear strength.
-            </p>
+            <div className="dh-home-context__card-content">
+              <h3 className="dh-home-context__card-title">Active Tectonic Fault Zones</h3>
+              <p className="dh-home-context__card-text">
+                Traversing the Main Central Thrust (MCT) and Alaknanda Fault, sheared rock formations like chlorite schists and phyllites possess naturally diminished shear strength.
+              </p>
+            </div>
           </div>
 
           <div className="dh-home-context__card">
-            <div className="dh-home-context__icon dh-home-context__icon--shield">
-              <ShieldCheck size={22} />
+            <div className="dh-home-context__card-image-wrap">
+              <img
+                src="/images/pilgrim-corridor.jpg"
+                alt="Vehicles and pilgrimage convoy navigating narrow high-altitude Garhwal highway"
+                className="dh-home-context__card-image"
+                loading="lazy"
+              />
+              <div className="dh-home-context__card-image-overlay" />
+              <div className="dh-home-context__icon dh-home-context__icon--shield">
+                <ShieldCheck size={20} />
+              </div>
             </div>
-            <h3 className="dh-home-context__card-title">Vulnerable Pilgrim Choke Points</h3>
-            <p className="dh-home-context__card-text">
-              Over 4 million pilgrims travel the Badrinath and Kedarnath corridors annually. A single roadblock at Sirobagarh or Birahi can strand thousands with zero bypass access.
-            </p>
+            <div className="dh-home-context__card-content">
+              <h3 className="dh-home-context__card-title">Vulnerable Pilgrim Choke Points</h3>
+              <p className="dh-home-context__card-text">
+                Over 4 million pilgrims travel the Badrinath and Kedarnath corridors annually. A single roadblock at Sirobagarh or Birahi can strand thousands with zero bypass access.
+              </p>
+            </div>
           </div>
         </div>
       </section>

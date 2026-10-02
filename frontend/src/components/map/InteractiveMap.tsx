@@ -49,6 +49,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+// MapTiler Topo-v4 Configuration with OpenStreetMap Fallback
+const MAPTILER_API_KEY = (import.meta.env.VITE_MAPTILER_API_KEY || '').trim();
+const hasMapTilerKey = Boolean(MAPTILER_API_KEY);
+
+const MAPTILER_TOPO_URL = `https://api.maptiler.com/maps/topo-v4/256/{z}/{x}/{y}.png?key=${MAPTILER_API_KEY}`;
+const MAPTILER_ATTRIBUTION =
+  '<a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">&copy; OpenStreetMap contributors</a>';
+
+const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
+
 // Custom technical beacon icons
 const startBeaconIcon = L.divIcon({
   className: 'dh-map-beacon dh-map-beacon--start',
@@ -237,6 +249,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   routingError,
   onRetryRouting,
 }) => {
+  // Basemap fallback state: defaults to false if MapTiler API key is present, true if missing
+  const [useFallbackOsm, setUseFallbackOsm] = React.useState(!hasMapTilerKey);
+
+  useEffect(() => {
+    if (import.meta.env.DEV && !hasMapTilerKey) {
+      console.info('[InteractiveMap] VITE_MAPTILER_API_KEY not configured. Falling back to OpenStreetMap.');
+    }
+  }, []);
+
   // If segments are not provided by parent, calculate fallback baseline
   const activeSegments =
     segments && segments.length > 0
@@ -401,13 +422,34 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <MapViewController origin={origin} destination={destination} activeRoute={activeRoute} />
         <MapClickHandler selectionMode={selectionMode} onMapClick={onMapClick} />
 
-        {/* Standard OpenStreetMap Tile Layer */}
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
-          maxZoom={18}
-          minZoom={7}
-        />
+        {/* Basemap Tile Layer: MapTiler Topo-v4 with graceful OpenStreetMap fallback */}
+        {!useFallbackOsm && hasMapTilerKey ? (
+          <TileLayer
+            key="maptiler-topo"
+            url={MAPTILER_TOPO_URL}
+            attribution={MAPTILER_ATTRIBUTION}
+            maxZoom={19}
+            minZoom={5}
+            eventHandlers={{
+              tileerror: () => {
+                if (!useFallbackOsm) {
+                  if (import.meta.env.DEV) {
+                    console.warn('[InteractiveMap] MapTiler tile request error. Reverting to OpenStreetMap.');
+                  }
+                  setUseFallbackOsm(true);
+                }
+              },
+            }}
+          />
+        ) : (
+          <TileLayer
+            key="osm-fallback"
+            url={OSM_URL}
+            attribution={OSM_ATTRIBUTION}
+            maxZoom={18}
+            minZoom={7}
+          />
+        )}
 
         {/* ─── PHASE 2 REAL ROAD ROUTE POLYLINE ─────────────────────────── */}
         {activeRoute && activeRoute.status === 'success' && activeRoute.geometry.length > 0 && (
