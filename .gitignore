@@ -68,11 +68,17 @@ data/raw/*.tif
 data/raw/*.tiff
 data/raw/*.dem
 data/raw/*.pbf
+data/raw/dem/**/*.tif
+data/raw/dem/**/*.tiff
+data/raw/dem/**/*.dem
+data/raw/dem/**/*.dt2
+data/processed/dem/**/*.tif
 *.geotiff
 *.gpkg-shm
 *.gpkg-wal
 *.sqlite-wal
 *.sqlite-shm
+!data/**/.gitkeep
 !data/fixtures/*.json
 !data/fixtures/*.geojson
 

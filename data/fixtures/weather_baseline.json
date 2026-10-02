@@ -1,0 +1,43 @@
+{
+  "_comment": "Drishti-Himalaya DEMO baseline weather dataset. Used exclusively in DEMO data mode for offline deterministic evaluation. NOT live observational telemetry.",
+  "source": "DEMO_BASELINE",
+  "generated_at": "2026-10-01T00:00:00Z",
+  "default": {
+    "p24_mm": 35.5,
+    "p72_mm": 68.2,
+    "daily_history_mm": [
+      35.5,
+      22.0,
+      10.7,
+      5.0,
+      0.0,
+      12.0,
+      18.5,
+      4.0,
+      0.0,
+      2.5,
+      15.0,
+      8.0,
+      0.0,
+      0.0,
+      5.0
+    ]
+  },
+  "scenarios": {
+    "dry": {
+      "p24_mm": 0.0,
+      "p72_mm": 0.0,
+      "daily_history_mm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "moderate": {
+      "p24_mm": 42.0,
+      "p72_mm": 85.0,
+      "daily_history_mm": [42.0, 28.0, 15.0, 10.0, 5.0, 0.0, 12.0, 8.0, 4.0, 2.0, 0.0, 0.0, 5.0, 2.0, 0.0]
+    },
+    "monsoon_heavy": {
+      "p24_mm": 88.0,
+      "p72_mm": 165.0,
+      "daily_history_mm": [88.0, 52.0, 25.0, 20.0, 15.0, 30.0, 40.0, 18.0, 12.0, 8.0, 5.0, 2.0, 10.0, 5.0, 0.0]
+    }
+  }
+}
