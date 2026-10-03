@@ -183,27 +183,55 @@ class TestRouteAnalysisExecution:
         self, client: TestClient, pilot_payload: dict
     ) -> None:
         """12. Verify analysis preserves PARTIAL status when Copernicus DEM is missing."""
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        with patch("backend.app.api.v1.route_analysis.analyze_route") as mock_analyze:
+            from backend.app.services.analysis_service import analyze_route as real_analyze
+            mock_analyze.side_effect = lambda *args, **kwargs: real_analyze(
+                *args, **{**kwargs, "terrain_provider": CopernicusDEMProvider(dem_dir="non_existent_dem_dir")}
+            )
+            res = client.post("/api/v1/route/analyze", json=pilot_payload)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "PARTIAL"
+            assert data["recommendation_available"] is False
+            assert "elevation_m" in data["data_availability"]["missing_features"]
+            assert "slope_degrees" in data["data_availability"]["missing_features"]
+
+    def test_13_route_analysis_does_not_fabricate_slope_when_dem_missing(
+        self, client: TestClient, pilot_payload: dict
+    ) -> None:
+        """13. Verify route analysis does not fabricate fake slope values when DEM is absent."""
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        with patch("backend.app.api.v1.route_analysis.analyze_route") as mock_analyze:
+            from backend.app.services.analysis_service import analyze_route as real_analyze
+            mock_analyze.side_effect = lambda *args, **kwargs: real_analyze(
+                *args, **{**kwargs, "terrain_provider": CopernicusDEMProvider(dem_dir="non_existent_dem_dir")}
+            )
+            res = client.post("/api/v1/route/analyze", json=pilot_payload)
+            assert res.status_code == 200
+            route = res.json()["routes"][0]
+            features = route["geojson"]["features"]
+            assert len(features) > 0
+            for feat in features:
+                props = feat["properties"]
+                assert props["slope_degrees"] is None
+                assert props["elevation_m"] is None
+
+    def test_13b_route_analysis_with_real_copernicus_dem_populates_elevation_and_slope(
+        self, client: TestClient, pilot_payload: dict
+    ) -> None:
+        """13b. Verify route analysis with real Copernicus DEM populates valid elevation and slope."""
         res = client.post("/api/v1/route/analyze", json=pilot_payload)
         assert res.status_code == 200
         data = res.json()
-        assert data["status"] == "PARTIAL"
-        assert data["recommendation_available"] is False
-        assert "elevation_m" in data["data_availability"]["missing_features"]
-        assert "slope_degrees" in data["data_availability"]["missing_features"]
-
-    def test_13_route_analysis_does_not_fabricate_slope(
-        self, client: TestClient, pilot_payload: dict
-    ) -> None:
-        """13. Verify route analysis does not fabricate fake slope values."""
-        res = client.post("/api/v1/route/analyze", json=pilot_payload)
-        assert res.status_code == 200
-        route = res.json()["routes"][0]
-        features = route["geojson"]["features"]
-        assert len(features) > 0
-        for feat in features:
-            props = feat["properties"]
-            assert props["slope_degrees"] is None
-            assert props["elevation_m"] is None
+        assert data["data_availability"]["terrain"] is True
+        assert data["data_provenance"]["terrain_source"] == "Copernicus DEM GLO-30"
+        route = data["routes"][0]
+        first_feature_props = route["geojson"]["features"][0]["properties"]
+        assert first_feature_props["elevation_m"] is not None
+        assert first_feature_props["elevation_m"] > 0.0
+        assert first_feature_props["slope_degrees"] is not None
+        assert first_feature_props["slope_degrees"] >= 0.0
 
     def test_14_route_analysis_does_not_fabricate_route_risk(
         self, client: TestClient, pilot_payload: dict
@@ -304,9 +332,7 @@ class TestWeatherAndHazardEndpoints:
         data = res.json()
         assert data["segment_id"] == "seg_0"
         assert data["coordinates"]["latitude"] > 0
-        assert data["is_risk_complete"] is False
-        assert data["overall_risk_score"] is None
-        assert "slope_degrees" in data["missing_features"]
+        assert "is_cut_slope" in data["missing_features"]
 
     def test_21_unexpected_service_error_becomes_structured_http_error(self) -> None:
         """21. Verify unhandled backend exceptions produce structured HTTP 500 without leaking stack traces."""

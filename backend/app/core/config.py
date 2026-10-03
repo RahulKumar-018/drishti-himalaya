@@ -68,6 +68,13 @@ class Settings(BaseSettings):
         description="Discrete road segment length in meters for risk scoring.",
     )
 
+    # Topographic DEM Configuration
+    DEM_DIRECTORY: str = Field(
+        default="data/raw/dem/copernicus_glo30",
+        validation_alias=AliasChoices("DEM_DIRECTORY", "COPERNICUS_DEM_DIR", "DEM_DIR"),
+        description="Path to local Copernicus GLO-30 DEM raster directory.",
+    )
+
     # External APIs and Cache
     OPENROUTESERVICE_API_KEY: str | None = Field(
         default=None,

@@ -136,7 +136,7 @@ class TestDemoRouteAnalysisCore:
         assert res.data_provenance.routing_source == "DEMO_FIXTURE"
         assert res.data_provenance.weather_source == "DEMO_BASELINE"
         assert res.data_provenance.landslide_source == "GSI"
-        assert res.data_provenance.terrain_source is None
+        assert res.data_provenance.terrain_source == "Copernicus DEM GLO-30"
 
 
 class TestTerrainAndCutSlopeSafety:
@@ -144,14 +144,18 @@ class TestTerrainAndCutSlopeSafety:
 
     def test_missing_dem_is_explicitly_reported(self):
         """When local DEM tiles are absent, terrain is marked unavailable and missing features are reported."""
-        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO")
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        empty_dem = CopernicusDEMProvider(dem_dir="non_existent_dem_dir")
+        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO", terrain_provider=empty_dem)
         assert res.data_availability.terrain is False
         assert "elevation_m" in res.data_availability.missing_features
         assert "slope_degrees" in res.data_availability.missing_features
 
     def test_missing_terrain_does_not_fabricate_slope(self):
         """Elevation and slope must strictly remain None when DEM is absent."""
-        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO")
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        empty_dem = CopernicusDEMProvider(dem_dir="non_existent_dem_dir")
+        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO", terrain_provider=empty_dem)
         for seg in res.routes[0].segments:
             assert seg.elevation_m is None
             assert seg.slope_degrees is None

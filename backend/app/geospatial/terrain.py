@@ -6,9 +6,10 @@ Copernicus DEM GLO-30 specifications.
 """
 
 from abc import ABC, abstractmethod
+import logging
 import math
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 
@@ -184,19 +185,75 @@ class RasterGridTerrainProvider(BaseTerrainProvider):
         return float(math.degrees(slope_rad))
 
 
+logger = logging.getLogger(__name__)
+
+try:
+    import rasterio
+    from rasterio.windows import Window
+    HAS_RASTERIO = True
+except ImportError:
+    HAS_RASTERIO = False
+
+
+class CopernicusTileMetadata:
+    """Metadata describing a single Copernicus GLO-30 DEM GeoTIFF tile."""
+
+    def __init__(
+        self,
+        file_path: Path,
+        bounds: Tuple[float, float, float, float],
+        res_lon_deg: float,
+        res_lat_deg: float,
+        width: int,
+        height: int,
+        nodata: Optional[float],
+        crs: str,
+    ) -> None:
+        self.file_path = file_path
+        self.bounds = bounds  # (min_lon, min_lat, max_lon, max_lat)
+        self.res_lon_deg = res_lon_deg
+        self.res_lat_deg = res_lat_deg
+        self.width = width
+        self.height = height
+        self.nodata = nodata
+        self.crs = crs
+
+    def __repr__(self) -> str:
+        return f"<CopernicusTileMetadata {self.file_path.name} bounds={self.bounds}>"
+
+
 class CopernicusDEMProvider(BaseTerrainProvider):
     """Production provider interface for Copernicus DEM GLO-30 (30m European Space Agency / Airbus).
 
-    Checks local filesystem for Copernicus GLO-30 GeoTIFF tiles.
-    If no tiles exist locally, operates in a clear data-unavailable mode returning None,
-    strictly refusing to fabricate synthetic elevation or slope.
+    Automatically discovers, indexes, and queries multi-tile local Copernicus GLO-30 GeoTIFFs.
+    If no tiles exist locally or a coordinate falls outside local coverage, operates in a clear
+    data-unavailable mode returning None, strictly refusing to fabricate synthetic elevation or slope.
     """
 
-    DEFAULT_DEM_DIR = Path("data/raw/dem/copernicus")
+    DEFAULT_DEM_DIR = Path("data/raw/dem/copernicus_glo30")
+    FALLBACK_DEM_DIR = Path("data/raw/dem/copernicus")
 
     def __init__(self, dem_dir: Optional[Path | str] = None) -> None:
-        self._dem_dir = Path(dem_dir) if dem_dir is not None else self.DEFAULT_DEM_DIR
-        self._active_provider: Optional[BaseTerrainProvider] = None
+        if dem_dir is not None:
+            self._dem_dir = Path(dem_dir)
+        else:
+            try:
+                from backend.app.core.config import settings
+                configured_dir = Path(settings.DEM_DIRECTORY)
+                if configured_dir.exists():
+                    self._dem_dir = configured_dir
+                elif self.DEFAULT_DEM_DIR.exists():
+                    self._dem_dir = self.DEFAULT_DEM_DIR
+                else:
+                    self._dem_dir = self.FALLBACK_DEM_DIR
+            except Exception:
+                if self.DEFAULT_DEM_DIR.exists():
+                    self._dem_dir = self.DEFAULT_DEM_DIR
+                else:
+                    self._dem_dir = self.FALLBACK_DEM_DIR
+
+        self._tiles: List[CopernicusTileMetadata] = []
+        self._dataset_cache: Dict[Path, Any] = {}
         self._discover_tiles()
 
     @property
@@ -205,33 +262,214 @@ class CopernicusDEMProvider(BaseTerrainProvider):
 
     @property
     def is_available(self) -> bool:
-        return self._active_provider is not None and self._active_provider.is_available
+        return len(self._tiles) > 0
+
+    @property
+    def tiles(self) -> List[CopernicusTileMetadata]:
+        return list(self._tiles)
+
+    @property
+    def tile_count(self) -> int:
+        return len(self._tiles)
 
     def _discover_tiles(self) -> None:
-        """Scan DEM directory for available GeoTIFF / DEM raster tiles."""
+        """Scan DEM directory recursively for available GeoTIFF raster tiles."""
+        if not HAS_RASTERIO:
+            logger.warning("rasterio library is not available. DEM provider cannot load GeoTIFFs.")
+            return
+
         if not self._dem_dir.exists():
             return
 
-        # Check for any .tif or .dem files
-        tif_files = list(self._dem_dir.glob("*.tif")) + list(self._dem_dir.glob("*.dem"))
-        if not tif_files:
-            return
+        # Search recursively for Copernicus *_DEM.tif or any .tif/.dem rasters
+        candidate_files = sorted(list(self._dem_dir.rglob("*_DEM.tif")))
+        if not candidate_files:
+            candidate_files = sorted(
+                list(self._dem_dir.rglob("*.tif")) + list(self._dem_dir.rglob("*.dem"))
+            )
 
-        # If tiles are present and rasterio is available in the future, load them.
-        # Currently no verified DEM tiles are locally present in data/raw/dem/copernicus.
-        pass
+        for f in candidate_files:
+            try:
+                with rasterio.open(f) as ds:
+                    b = ds.bounds
+                    res_x, res_y = ds.res
+                    meta = CopernicusTileMetadata(
+                        file_path=f,
+                        bounds=(float(b.left), float(b.bottom), float(b.right), float(b.top)),
+                        res_lon_deg=float(res_x),
+                        res_lat_deg=float(res_y),
+                        width=int(ds.width),
+                        height=int(ds.height),
+                        nodata=float(ds.nodata) if ds.nodata is not None else None,
+                        crs=str(ds.crs),
+                    )
+                    self._tiles.append(meta)
+            except Exception as exc:
+                logger.warning("Could not index DEM raster file %s: %s", f, exc)
+
+    def find_tile(self, longitude: float, latitude: float) -> Optional[CopernicusTileMetadata]:
+        """Locate the Copernicus DEM tile covering the given WGS84 coordinates."""
+        matching: List[CopernicusTileMetadata] = []
+        for t in self._tiles:
+            min_lon, min_lat, max_lon, max_lat = t.bounds
+            if min_lon <= longitude <= max_lon and min_lat <= latitude <= max_lat:
+                matching.append(t)
+
+        if not matching:
+            return None
+
+        if len(matching) == 1:
+            return matching[0]
+
+        # In case of shared boundary edge between adjacent tiles,
+        # prefer tile where index falls strictly within [0, width) and [0, height)
+        for t in matching:
+            try:
+                ds = self._get_dataset(t.file_path)
+                row, col = ds.index(longitude, latitude)
+                if 0 <= col < t.width and 0 <= row < t.height:
+                    return t
+            except Exception:
+                pass
+
+        return matching[0]
+
+    def _get_dataset(self, file_path: Path):
+        """Retrieve or open a cached rasterio dataset reader."""
+        if file_path in self._dataset_cache:
+            ds = self._dataset_cache[file_path]
+            if not ds.closed:
+                return ds
+
+        ds = rasterio.open(file_path)
+        self._dataset_cache[file_path] = ds
+        return ds
 
     def get_elevation_m(self, longitude: float, latitude: float) -> Optional[float]:
         """Return elevation in meters from Copernicus DEM, or None if no local DEM coverage exists."""
-        if self._active_provider is not None:
-            return self._active_provider.get_elevation_m(longitude, latitude)
-        return None
+        if not self.is_available:
+            return None
+
+        tile = self.find_tile(longitude, latitude)
+        if tile is None:
+            return None
+
+        try:
+            ds = self._get_dataset(tile.file_path)
+            row, col = ds.index(longitude, latitude)
+            if not (0 <= row < tile.height and 0 <= col < tile.width):
+                return None
+
+            val = ds.read(1, window=Window(col, row, 1, 1))[0, 0]
+            if tile.nodata is not None and val == tile.nodata:
+                return None
+            if np.isnan(val) or val <= -9999.0:
+                return None
+
+            return float(val)
+        except Exception as exc:
+            logger.warning("Error reading DEM elevation at (%f, %f): %s", longitude, latitude, exc)
+            return None
 
     def get_slope_degrees(self, longitude: float, latitude: float) -> Optional[float]:
-        """Return slope in degrees from Copernicus DEM, or None if no local DEM coverage exists."""
-        if self._active_provider is not None:
-            return self._active_provider.get_slope_degrees(longitude, latitude)
-        return None
+        """Derive topographic slope gradient in degrees using Horn's 3x3 finite-difference algorithm.
+
+        The ground cell dimensions are computed in meters at the local query latitude:
+            dx_m = res_lon_deg * (pi / 180.0) * 6378137.0 * cos(latitude)
+            dy_m = res_lat_deg * (pi / 180.0) * 6378137.0
+
+        Returns None if outside DEM coverage, or if any cell in the 3x3 window is nodata.
+        """
+        if not self.is_available:
+            return None
+
+        tile = self.find_tile(longitude, latitude)
+        if tile is None:
+            return None
+
+        try:
+            ds = self._get_dataset(tile.file_path)
+            row, col = ds.index(longitude, latitude)
+            if not (0 <= row < tile.height and 0 <= col < tile.width):
+                return None
+
+            # Fast path: strictly interior 3x3 window within the containing tile
+            if 1 <= col < tile.width - 1 and 1 <= row < tile.height - 1:
+                window_data = ds.read(1, window=Window(col - 1, row - 1, 3, 3))
+            else:
+                # Border cell: assemble 3x3 by sampling neighbors (including adjacent tiles)
+                window_data = np.zeros((3, 3), dtype=np.float64)
+                for dr in (-1, 0, 1):
+                    for dc in (-1, 0, 1):
+                        r_t = row + dr
+                        c_t = col + dc
+                        if 0 <= c_t < tile.width and 0 <= r_t < tile.height:
+                            cell_v = ds.read(1, window=Window(c_t, r_t, 1, 1))[0, 0]
+                        else:
+                            # Outside this tile: compute geographic coordinate of neighbor
+                            n_lon, n_lat = ds.xy(r_t, c_t)
+                            elev_opt = self.get_elevation_m(n_lon, n_lat)
+                            if elev_opt is None:
+                                return None
+                            cell_v = elev_opt
+
+                        if tile.nodata is not None and cell_v == tile.nodata:
+                            return None
+                        if np.isnan(cell_v) or cell_v <= -9999.0:
+                            return None
+
+                        window_data[dr + 1, dc + 1] = cell_v
+
+            # Check nodata / nan across 3x3
+            if tile.nodata is not None and np.any(window_data == tile.nodata):
+                return None
+            if np.any(np.isnan(window_data)) or np.any(window_data <= -9999.0):
+                return None
+
+            # 3x3 neighborhood:
+            # z1 z2 z3
+            # z4 z5 z6
+            # z7 z8 z9
+            z1, z2, z3 = window_data[0, 0], window_data[0, 1], window_data[0, 2]
+            z4, z5, z6 = window_data[1, 0], window_data[1, 1], window_data[1, 2]
+            z7, z8, z9 = window_data[2, 0], window_data[2, 1], window_data[2, 2]
+
+            phi = math.radians(latitude)
+            dx_m = tile.res_lon_deg * (math.pi / 180.0) * 6378137.0 * math.cos(phi)
+            dy_m = tile.res_lat_deg * (math.pi / 180.0) * 6378137.0
+
+            if dx_m <= 0.0 or dy_m <= 0.0:
+                return 0.0
+
+            # Horn (1981) partial derivatives
+            dz_dx = ((z3 + 2.0 * z6 + z9) - (z1 + 2.0 * z4 + z7)) / (8.0 * dx_m)
+            # Row index increases southward (North to South)
+            dz_dy = ((z1 + 2.0 * z2 + z3) - (z7 + 2.0 * z8 + z9)) / (8.0 * dy_m)
+
+            slope_rad = math.atan(math.hypot(dz_dx, dz_dy))
+            return float(math.degrees(slope_rad))
+        except Exception as exc:
+            logger.warning("Error computing DEM slope at (%f, %f): %s", longitude, latitude, exc)
+            return None
+
+    def close(self) -> None:
+        """Close all cached dataset readers."""
+        for ds in self._dataset_cache.values():
+            try:
+                if not ds.closed:
+                    ds.close()
+            except Exception:
+                pass
+        self._dataset_cache.clear()
+
+    def __enter__(self) -> "CopernicusDEMProvider":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        self.close()
 
     @staticmethod
     def get_required_tiles_info() -> dict[str, Any]:

@@ -87,3 +87,12 @@ logs/
 *.log
 scratch/
 tmp/
+
+# Local government geospatial datasets
+data/raw/GSI_Landslide_Inventory.geojson
+data/raw/dem/
+
+# Local SQLite database
+*.db
+*.sqlite
+*.sqlite3

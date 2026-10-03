@@ -9,9 +9,8 @@ shapely>=2.0.0
 scipy>=1.12.0
 numpy>=1.26.0
 
-# Optional Scientific & Raster (Installed in full GIS environment)
-# geopandas>=0.14.0
-# rasterio>=1.3.0
+# Geospatial Raster Processing
+rasterio>=1.3.0
 
 # HTTP & Weather API Client
 requests>=2.31.0
