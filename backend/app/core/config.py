@@ -75,20 +75,42 @@ class Settings(BaseSettings):
         description="Path to local Copernicus GLO-30 DEM raster directory.",
     )
 
+    # Road Cut-Slope Configuration (OpenStreetMap)
+    OSM_CUT_SLOPES_PATH: str = Field(
+        default="data/raw/osm/uttarakhand_cut_slopes.geojson",
+        validation_alias=AliasChoices("OSM_CUT_SLOPES_PATH", "CUT_SLOPES_PATH", "OSM_CUT_SLOPE_PATH"),
+        description="Path to OpenStreetMap road cut-slope GeoJSON dataset for Uttarakhand.",
+    )
+
     # External APIs and Cache
     OPENROUTESERVICE_API_KEY: str | None = Field(
         default=None,
         validation_alias=AliasChoices("OPENROUTESERVICE_API_KEY", "ORS_API_KEY"),
         description="API key for OpenRouteService directions (optional in DEMO mode).",
     )
+
+    @property
+    def ORS_API_KEY(self) -> str | None:
+        """Convenience alias property for OPENROUTESERVICE_API_KEY."""
+        return self.OPENROUTESERVICE_API_KEY
     ORS_BASE_URL: str = Field(
-        default="https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+        default="https://api.heigit.org/openrouteservice/v2/directions/driving-car/geojson",
         validation_alias=AliasChoices("ORS_BASE_URL", "OPENROUTESERVICE_BASE_URL"),
         description="Base URL for OpenRouteService directions endpoint.",
     )
     ORS_PROFILE: str = Field(
         default="driving-car",
         description="Routing profile for vehicle traversal (e.g. driving-car).",
+    )
+    ORS_MAX_ALTERNATIVE_DISTANCE_METERS: float = Field(
+        default=100000.0,
+        gt=0,
+        validation_alias=AliasChoices(
+            "ORS_MAX_ALTERNATIVE_DISTANCE_METERS",
+            "ORS_MAX_ALTERNATIVE_DISTANCE_M",
+            "MAX_ALTERNATIVE_ROUTE_DISTANCE_METERS",
+        ),
+        description="Maximum approximated route distance in meters supported by HeiGIT native alternative-route algorithm.",
     )
     OPEN_METEO_BASE_URL: str = Field(
         default="https://api.open-meteo.com/v1/forecast",

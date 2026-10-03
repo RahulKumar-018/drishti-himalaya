@@ -234,23 +234,43 @@ class CopernicusDEMProvider(BaseTerrainProvider):
     FALLBACK_DEM_DIR = Path("data/raw/dem/copernicus")
 
     def __init__(self, dem_dir: Optional[Path | str] = None) -> None:
+        repo_root = Path(__file__).resolve().parents[3]
         if dem_dir is not None:
-            self._dem_dir = Path(dem_dir)
+            p = Path(dem_dir)
+            if not p.is_absolute() and not p.exists() and (repo_root / p).exists():
+                p = (repo_root / p).resolve()
+            self._dem_dir = p
         else:
             try:
                 from backend.app.core.config import settings
                 configured_dir = Path(settings.DEM_DIRECTORY)
-                if configured_dir.exists():
+                if configured_dir.is_absolute() and configured_dir.exists():
                     self._dem_dir = configured_dir
+                elif configured_dir.exists():
+                    self._dem_dir = configured_dir.resolve()
+                elif (repo_root / configured_dir).exists():
+                    self._dem_dir = (repo_root / configured_dir).resolve()
                 elif self.DEFAULT_DEM_DIR.exists():
-                    self._dem_dir = self.DEFAULT_DEM_DIR
+                    self._dem_dir = self.DEFAULT_DEM_DIR.resolve()
+                elif (repo_root / self.DEFAULT_DEM_DIR).exists():
+                    self._dem_dir = (repo_root / self.DEFAULT_DEM_DIR).resolve()
+                elif self.FALLBACK_DEM_DIR.exists():
+                    self._dem_dir = self.FALLBACK_DEM_DIR.resolve()
+                elif (repo_root / self.FALLBACK_DEM_DIR).exists():
+                    self._dem_dir = (repo_root / self.FALLBACK_DEM_DIR).resolve()
                 else:
-                    self._dem_dir = self.FALLBACK_DEM_DIR
+                    self._dem_dir = configured_dir
             except Exception:
                 if self.DEFAULT_DEM_DIR.exists():
-                    self._dem_dir = self.DEFAULT_DEM_DIR
+                    self._dem_dir = self.DEFAULT_DEM_DIR.resolve()
+                elif (repo_root / self.DEFAULT_DEM_DIR).exists():
+                    self._dem_dir = (repo_root / self.DEFAULT_DEM_DIR).resolve()
+                elif self.FALLBACK_DEM_DIR.exists():
+                    self._dem_dir = self.FALLBACK_DEM_DIR.resolve()
+                elif (repo_root / self.FALLBACK_DEM_DIR).exists():
+                    self._dem_dir = (repo_root / self.FALLBACK_DEM_DIR).resolve()
                 else:
-                    self._dem_dir = self.FALLBACK_DEM_DIR
+                    self._dem_dir = self.DEFAULT_DEM_DIR
 
         self._tiles: List[CopernicusTileMetadata] = []
         self._dataset_cache: Dict[Path, Any] = {}
@@ -279,6 +299,7 @@ class CopernicusDEMProvider(BaseTerrainProvider):
             return
 
         if not self._dem_dir.exists():
+            logger.info("DEM directory does not exist: %s", self._dem_dir)
             return
 
         # Search recursively for Copernicus *_DEM.tif or any .tif/.dem rasters
@@ -306,6 +327,12 @@ class CopernicusDEMProvider(BaseTerrainProvider):
                     self._tiles.append(meta)
             except Exception as exc:
                 logger.warning("Could not index DEM raster file %s: %s", f, exc)
+
+        logger.info(
+            "CopernicusDEMProvider initialized from %s with %d discovered tile(s).",
+            self._dem_dir,
+            len(self._tiles),
+        )
 
     def find_tile(self, longitude: float, latitude: float) -> Optional[CopernicusTileMetadata]:
         """Locate the Copernicus DEM tile covering the given WGS84 coordinates."""

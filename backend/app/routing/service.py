@@ -80,9 +80,10 @@ class RoutingService:
 _default_routing_service: Optional[RoutingService] = None
 
 
-def get_routing_service() -> RoutingService:
-    """Return application-wide routing service singleton."""
+def get_routing_service(data_mode: Optional[str] = None) -> RoutingService:
+    """Return application-wide routing service singleton matching the active or requested DATA_MODE."""
     global _default_routing_service
-    if _default_routing_service is None:
-        _default_routing_service = RoutingService()
+    target_mode = (data_mode or settings.DATA_MODE).upper()
+    if _default_routing_service is None or _default_routing_service.data_mode != target_mode:
+        _default_routing_service = RoutingService(data_mode=target_mode)
     return _default_routing_service

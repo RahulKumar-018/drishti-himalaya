@@ -42,12 +42,36 @@ class WeatherService:
         self.data_mode = (data_mode or settings.DATA_MODE).upper()
         self.base_url = base_url or settings.OPEN_METEO_BASE_URL
         self.cache_ttl_seconds = (cache_ttl_hours or settings.WEATHER_CACHE_TTL_HOURS) * 3600
-        self.fixture_path = Path(fixture_path) if fixture_path is not None else DEFAULT_FIXTURE_PATH
+        repo_root = Path(__file__).resolve().parents[3]
+        f_path = Path(fixture_path) if fixture_path is not None else DEFAULT_FIXTURE_PATH
+        if not f_path.is_absolute() and not f_path.exists() and (repo_root / f_path).exists():
+            self.fixture_path = (repo_root / f_path).resolve()
+        else:
+            self.fixture_path = f_path
         self.timeout_seconds = timeout_seconds
         self._http_client = http_client
+        self._owned_client: Optional[httpx.Client] = None
 
         # In-memory spatial cache: key=(round(lon, 2), round(lat, 2)), value=(WeatherFeatures, expire_timestamp)
         self._cache: Dict[Tuple[float, float], Tuple[WeatherFeatures, float]] = {}
+
+    def _get_client(self) -> httpx.Client:
+        if self._http_client is not None:
+            return self._http_client
+        if self._owned_client is None or self._owned_client.is_closed:
+            self._owned_client = httpx.Client(timeout=self.timeout_seconds)
+        return self._owned_client
+
+    def close(self) -> None:
+        """Close internally managed HTTP client."""
+        if self._owned_client is not None and not self._owned_client.is_closed:
+            self._owned_client.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
 
     @property
     def cache_size(self) -> int:
@@ -170,12 +194,8 @@ class WeatherService:
         }
 
         try:
-            client = self._http_client or httpx.Client(timeout=self.timeout_seconds)
-            try:
-                response = client.get(self.base_url, params=params)
-            finally:
-                if self._http_client is None:
-                    client.close()
+            client = self._get_client()
+            response = client.get(self.base_url, params=params)
 
             if response.status_code != 200:
                 return WeatherQueryResult(
@@ -297,9 +317,10 @@ class WeatherService:
 _default_weather_service: Optional[WeatherService] = None
 
 
-def get_weather_service() -> WeatherService:
-    """Return application-wide weather service singleton."""
+def get_weather_service(data_mode: Optional[str] = None) -> WeatherService:
+    """Return application-wide weather service singleton matching the active or requested DATA_MODE."""
     global _default_weather_service
-    if _default_weather_service is None:
-        _default_weather_service = WeatherService()
+    target_mode = (data_mode or settings.DATA_MODE).upper()
+    if _default_weather_service is None or _default_weather_service.data_mode != target_mode:
+        _default_weather_service = WeatherService(data_mode=target_mode)
     return _default_weather_service

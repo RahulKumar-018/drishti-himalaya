@@ -149,6 +149,22 @@ async def routing_provider_handler(
     )
 
 
+@app.exception_handler(RoutingNetworkError)
+async def routing_network_handler(
+    request: Request,
+    exc: RoutingNetworkError,
+) -> JSONResponse:
+    """Handle upstream routing network connection failures."""
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        content={
+            "error": "ROUTING_NETWORK_ERROR",
+            "message": str(exc),
+            "details": {},
+        },
+    )
+
+
 @app.exception_handler(MissingAPIKeyError)
 async def missing_api_key_handler(
     request: Request,

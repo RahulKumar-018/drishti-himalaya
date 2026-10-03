@@ -16,7 +16,11 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import uuid
 
 from backend.app.core.config import settings
-from backend.app.geospatial.enrichment import BaseCutSlopeProvider, DefaultCutSlopeProvider
+from backend.app.geospatial.enrichment import (
+    BaseCutSlopeProvider,
+    DefaultCutSlopeProvider,
+    get_cut_slope_provider,
+)
 from backend.app.geospatial.service import LandslideInventoryService, get_inventory_service
 from backend.app.geospatial.terrain import BaseTerrainProvider, CopernicusDEMProvider
 from backend.app.risk_engine.aggregation import calculate_route_objective, calculate_route_risk
@@ -99,14 +103,10 @@ def analyze_route(
             )
 
     # Initialize services
-    routing_svc = routing_service or (
-        RoutingService(data_mode=mode) if data_mode else get_routing_service()
-    )
+    routing_svc = routing_service or get_routing_service(data_mode=mode)
     terrain_prov = terrain_provider or CopernicusDEMProvider()
-    cut_slope_prov = cut_slope_provider or DefaultCutSlopeProvider()
-    weather_svc = weather_service or (
-        WeatherService(data_mode=mode) if data_mode else get_weather_service()
-    )
+    cut_slope_prov = cut_slope_provider or get_cut_slope_provider()
+    weather_svc = weather_service or get_weather_service(data_mode=mode)
     inv_svc = inventory_service or get_inventory_service()
 
     if not inv_svc.is_ready:
@@ -117,14 +117,11 @@ def analyze_route(
     if not terrain_prov.is_available:
         missing_global.extend(["elevation_m", "slope_degrees"])
 
-    is_cut_slope_surveyed = False
-    if isinstance(cut_slope_prov, DefaultCutSlopeProvider) and cut_slope_prov._map:
-        is_cut_slope_surveyed = True
-    elif not isinstance(cut_slope_prov, DefaultCutSlopeProvider):
-        is_cut_slope_surveyed = True
-
+    is_cut_slope_surveyed = cut_slope_prov.is_available
     if not is_cut_slope_surveyed:
         missing_global.append("is_cut_slope")
+
+    cut_slope_source = cut_slope_prov.source_name if cut_slope_prov.is_available else None
 
     provenance = DataProvenance(
         routing_source=routing_svc.provider.provider_name,
@@ -135,7 +132,7 @@ def analyze_route(
         ),
         landslide_source="GSI",
         terrain_source=terrain_prov.source_name if terrain_prov.is_available else None,
-        cut_slope_source="SURVEY_DATA" if is_cut_slope_surveyed else None,
+        cut_slope_source=cut_slope_source,
     )
 
     availability = DataAvailability(
@@ -346,6 +343,20 @@ def analyze_route(
 
     exec_duration_ms = round((time.perf_counter() - t_start) * 1000.0, 2)
 
+    # Aggregate missing features from global checks and all evaluated routes
+    all_missing_features: set[str] = set(missing_global)
+    for r in evaluated_routes:
+        all_missing_features.update(r.data_availability.missing_features)
+
+    overall_availability = DataAvailability(
+        routing=True,
+        landslide_inventory=inv_svc.is_ready,
+        weather=True,
+        terrain=terrain_prov.is_available,
+        cut_slope=is_cut_slope_surveyed,
+        missing_features=sorted(list(all_missing_features)),
+    )
+
     return AnalysisResult(
         query_id=query_id,
         status=overall_status,
@@ -354,6 +365,6 @@ def analyze_route(
         routes=evaluated_routes,
         recommended_route_id=recommended_id,
         recommendation_available=rec_available,
-        data_availability=availability,
+        data_availability=overall_availability,
         data_provenance=provenance,
     )

@@ -8,10 +8,17 @@ from backend.app.geospatial.enrichment import (
     SegmentHazardFeatures,
     enrich_route_segments,
     evaluate_segment_risk_from_features,
+    get_cut_slope_provider,
 )
 from backend.app.geospatial.kdtree import SpatialLandslideIndex
 from backend.app.geospatial.loaders import BaseLandslideLoader, GSILoader, NRSCLoader
 from backend.app.geospatial.models import LandslideSource, NormalizedLandslideRecord
+from backend.app.geospatial.osm_cut_slope import (
+    OSMCutSlopeFeature,
+    OSMCutSlopeMatch,
+    OSMCutSlopeProvider,
+    load_osm_cut_slopes,
+)
 from backend.app.geospatial.projection import (
     batch_utm44n_to_wgs84,
     batch_wgs84_to_utm44n,
@@ -49,9 +56,14 @@ __all__ = [
     "BaseTerrainProvider",
     "RasterGridTerrainProvider",
     "CopernicusDEMProvider",
-    # Road Exposure
+    # Road Exposure & Cut Slopes
     "BaseCutSlopeProvider",
     "DefaultCutSlopeProvider",
+    "get_cut_slope_provider",
+    "OSMCutSlopeFeature",
+    "OSMCutSlopeMatch",
+    "OSMCutSlopeProvider",
+    "load_osm_cut_slopes",
     # Segment Enrichment
     "SegmentHazardFeatures",
     "EnrichedSegment",

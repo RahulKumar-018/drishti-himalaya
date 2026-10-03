@@ -110,3 +110,11 @@ class TestConfigSettings:
         assert instance1 is instance2
         assert settings is not None
         assert isinstance(settings.DATA_MODE, str)
+
+    def test_ors_base_url_default_and_alias(self) -> None:
+        """Verify that ORS_BASE_URL defaults to HeiGIT endpoint and accepts alias."""
+        cfg_default = Settings(_env_file=None)
+        assert cfg_default.ORS_BASE_URL == "https://api.heigit.org/openrouteservice/v2/directions/driving-car/geojson"
+
+        cfg_alias = Settings(OPENROUTESERVICE_BASE_URL="https://custom.ors/v2", _env_file=None)  # type: ignore[call-arg]
+        assert cfg_alias.ORS_BASE_URL == "https://custom.ors/v2"

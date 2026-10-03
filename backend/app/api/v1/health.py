@@ -57,7 +57,8 @@ def _check_routing() -> Tuple[bool, str]:
     if mode == "DEMO":
         return True, "active (deterministic DEMO corridor)"
     else:
-        if settings.OPENROUTESERVICE_API_KEY:
+        key = settings.OPENROUTESERVICE_API_KEY
+        if key and key.strip():
             return True, "active (OpenRouteService LIVE)"
         return False, "degraded (missing OPENROUTESERVICE_API_KEY)"
 

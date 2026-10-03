@@ -21,6 +21,21 @@ from backend.app.routing.models import RouteSegment, SegmentedRouteResult
 class BaseCutSlopeProvider(ABC):
     """Abstract interface for road engineering cut-slope exposure detection."""
 
+    @property
+    def provider_name(self) -> str:
+        """Name of the cut-slope provider implementation."""
+        return "BASE_CUT_SLOPE"
+
+    @property
+    def source_name(self) -> Optional[str]:
+        """Name of the cut-slope data source (e.g. 'OpenStreetMap', 'SURVEY_DATA')."""
+        return None
+
+    @property
+    def is_available(self) -> bool:
+        """True if the provider has data loaded and ready for queries."""
+        return True
+
     @abstractmethod
     def is_cut_slope(
         self,
@@ -44,6 +59,18 @@ class DefaultCutSlopeProvider(BaseCutSlopeProvider):
     def __init__(self, cut_slope_map: Optional[dict[int, bool]] = None) -> None:
         self._map = cut_slope_map or {}
 
+    @property
+    def provider_name(self) -> str:
+        return "DEFAULT_CUT_SLOPE"
+
+    @property
+    def source_name(self) -> Optional[str]:
+        return "SURVEY_DATA" if self._map else None
+
+    @property
+    def is_available(self) -> bool:
+        return bool(self._map)
+
     def is_cut_slope(
         self,
         segment: RouteSegment,
@@ -54,6 +81,29 @@ class DefaultCutSlopeProvider(BaseCutSlopeProvider):
         if properties and "is_cut_slope" in properties and properties["is_cut_slope"] is not None:
             return bool(properties["is_cut_slope"])
         return None
+
+
+# Default singleton instance for cut-slope provider
+_default_cut_slope_provider: Optional[BaseCutSlopeProvider] = None
+
+
+def get_cut_slope_provider(
+    geojson_path: Optional[Any] = None,
+    force_reload: bool = False,
+) -> BaseCutSlopeProvider:
+    """Return default cut-slope provider: OSMCutSlopeProvider if available, else DefaultCutSlopeProvider."""
+    global _default_cut_slope_provider
+    if _default_cut_slope_provider is None or force_reload:
+        from pathlib import Path
+        from backend.app.core.config import settings
+        from backend.app.geospatial.osm_cut_slope import OSMCutSlopeProvider
+
+        path = Path(geojson_path or settings.OSM_CUT_SLOPES_PATH)
+        if path.exists():
+            _default_cut_slope_provider = OSMCutSlopeProvider(geojson_path=path)
+        else:
+            _default_cut_slope_provider = DefaultCutSlopeProvider()
+    return _default_cut_slope_provider
 
 
 class SegmentHazardFeatures(BaseModel):
@@ -198,7 +248,7 @@ def enrich_route_segments(
         terrain_provider = CopernicusDEMProvider()
 
     if cut_slope_provider is None:
-        cut_slope_provider = DefaultCutSlopeProvider()
+        cut_slope_provider = get_cut_slope_provider()
 
     if inventory_service is None:
         inventory_service = get_inventory_service()

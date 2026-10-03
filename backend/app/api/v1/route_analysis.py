@@ -50,15 +50,40 @@ def post_route_analyze(request: AnalyzeRouteRequest) -> AnalyzeRouteResponse:
         geojson_data = r.to_geojson()
         fc = GeoJSONFeatureCollection.model_validate(geojson_data)
 
+        total_segs = len(r.segments)
+        terrain_segs = sum(
+            1 for s in r.segments if s.slope_degrees is not None and s.elevation_m is not None
+        )
+        missing_terrain_segs = total_segs - terrain_segs
+
         if r.status.value == "COMPLETE":
             advisory = (
                 "Full geotechnical hazard evaluation completed across terrain, precipitation, and historical catalogs."
             )
-        else:
+        elif not r.data_availability.terrain or terrain_segs == 0:
             advisory = (
                 "Partial hazard assessment: Copernicus DEM GLO-30 terrain data is not locally available. "
-                "Elevation, slope, and cut-slope factors are unpopulated. Risk engine scores are not fabricated."
+                "Elevation and slope factors are unpopulated. Risk engine scores are not fabricated."
             )
+        elif missing_terrain_segs > 0:
+            advisory = (
+                f"Partial hazard assessment: Copernicus DEM GLO-30 terrain data is available and enriched {terrain_segs}/{total_segs} "
+                f"segments, but {missing_terrain_segs} segment(s) lack local DEM tile coverage. "
+                "Risk engine scores are not fabricated for incomplete segments."
+            )
+        else:
+            missing_factors = [
+                f for f in r.data_availability.missing_features
+                if f not in ("elevation_m", "slope_degrees")
+            ]
+            missing_desc = ", ".join(missing_factors) if missing_factors else "unpopulated factor data"
+            advisory = (
+                f"Partial hazard assessment: Copernicus DEM GLO-30 terrain data is fully active "
+                f"(elevation and slope enriched across all {total_segs} segments). "
+                f"Assessment remains partial due to missing {missing_desc}. "
+                "Risk engine scores are not fabricated without complete verified hazard inputs."
+            )
+
 
         route_infos.append(
             RouteInfo(
