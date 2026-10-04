@@ -71,6 +71,11 @@ def post_route_analyze(request: AnalyzeRouteRequest) -> AnalyzeRouteResponse:
                 f"segments, but {missing_terrain_segs} segment(s) lack local DEM tile coverage. "
                 "Risk engine scores are not fabricated for incomplete segments."
             )
+        elif not r.data_availability.weather:
+            advisory = (
+                "Partial hazard assessment: Meteorological precipitation telemetry is unavailable. "
+                "Rainfall factors (P24, P72, ARI) are unpopulated. Risk engine scores are not fabricated without complete verified hazard inputs."
+            )
         elif r.route_risk is not None and "is_cut_slope" in r.data_availability.missing_features:
             advisory = (
                 "Partial hazard assessment: Risk scores were calculated using verified available factors "

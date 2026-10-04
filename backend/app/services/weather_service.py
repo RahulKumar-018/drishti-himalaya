@@ -193,37 +193,54 @@ class WeatherService:
             "timezone": "UTC",
         }
 
-        try:
-            client = self._get_client()
-            response = client.get(self.base_url, params=params)
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                client = self._get_client()
+                response = client.get(self.base_url, params=params)
 
-            if response.status_code != 200:
+                if response.status_code == 429 and attempt < max_retries:
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+
+                if response.status_code != 200:
+                    return WeatherQueryResult(
+                        is_available=False,
+                        error_message=f"Open-Meteo returned HTTP {response.status_code}: {response.text[:100]}",
+                    )
+
+                data = response.json()
+                return self.parse_open_meteo_response(data)
+
+            except httpx.TimeoutException:
+                if attempt < max_retries:
+                    time.sleep(0.3 * (attempt + 1))
+                    continue
+                logger.warning(f"Open-Meteo request timed out for ({longitude}, {latitude})")
                 return WeatherQueryResult(
                     is_available=False,
-                    error_message=f"Open-Meteo returned HTTP {response.status_code}: {response.text[:100]}",
+                    error_message=f"Open-Meteo request timed out after {self.timeout_seconds}s",
+                )
+            except httpx.RequestError as e:
+                if attempt < max_retries:
+                    time.sleep(0.3 * (attempt + 1))
+                    continue
+                logger.warning(f"Network error querying Open-Meteo: {e}")
+                return WeatherQueryResult(
+                    is_available=False,
+                    error_message=f"Network error querying Open-Meteo: {e}",
+                )
+            except Exception as e:
+                logger.error(f"Unexpected error querying Open-Meteo: {e}")
+                return WeatherQueryResult(
+                    is_available=False,
+                    error_message=f"Unexpected weather ingestion error: {e}",
                 )
 
-            data = response.json()
-            return self.parse_open_meteo_response(data)
-
-        except httpx.TimeoutException:
-            logger.warning(f"Open-Meteo request timed out for ({longitude}, {latitude})")
-            return WeatherQueryResult(
-                is_available=False,
-                error_message=f"Open-Meteo request timed out after {self.timeout_seconds}s",
-            )
-        except httpx.RequestError as e:
-            logger.warning(f"Network error querying Open-Meteo: {e}")
-            return WeatherQueryResult(
-                is_available=False,
-                error_message=f"Network error querying Open-Meteo: {e}",
-            )
-        except Exception as e:
-            logger.error(f"Unexpected error querying Open-Meteo: {e}")
-            return WeatherQueryResult(
-                is_available=False,
-                error_message=f"Unexpected weather ingestion error: {e}",
-            )
+        return WeatherQueryResult(
+            is_available=False,
+            error_message="Max retries exhausted querying Open-Meteo",
+        )
 
     @staticmethod
     def parse_open_meteo_response(data: dict[str, Any]) -> WeatherQueryResult:

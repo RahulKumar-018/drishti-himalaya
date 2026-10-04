@@ -328,6 +328,10 @@ def analyze_route(
         is_orig_snap = bool(meta.get("is_origin_snapped", False))
         is_dest_snap = bool(meta.get("is_destination_snapped", False))
 
+        route_weather_available = not any(
+            f in route_missing_features for f in ("p24_mm", "p72_mm", "ari_mm")
+        )
+
         evaluated_routes.append(
             AnalysisRouteResult(
                 route_id=norm_route.route_id,
@@ -338,7 +342,7 @@ def analyze_route(
                 data_availability=DataAvailability(
                     routing=True,
                     landslide_inventory=inv_svc.is_ready,
-                    weather=True,
+                    weather=route_weather_available,
                     terrain=terrain_prov.is_available,
                     cut_slope=is_cut_slope_surveyed,
                     missing_features=sorted(list(route_missing_features)),
@@ -392,10 +396,16 @@ def analyze_route(
     for r in evaluated_routes:
         all_missing_features.update(r.data_availability.missing_features)
 
+    overall_weather_available = (
+        all(r.data_availability.weather for r in evaluated_routes)
+        if evaluated_routes
+        else False
+    )
+
     overall_availability = DataAvailability(
         routing=True,
         landslide_inventory=inv_svc.is_ready,
-        weather=True,
+        weather=overall_weather_available,
         terrain=terrain_prov.is_available,
         cut_slope=is_cut_slope_surveyed,
         missing_features=sorted(list(all_missing_features)),
