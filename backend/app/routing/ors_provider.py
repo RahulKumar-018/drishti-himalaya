@@ -88,6 +88,9 @@ class ORSRoutingProvider(BaseRoutingProvider):
         timeout_seconds: float = 10.0,
         http_client: Optional[httpx.Client] = None,
         max_alternative_distance_m: Optional[float] = None,
+        default_snapping_radius_m: Optional[float] = None,
+        snapping_retry_radii_m: Optional[Sequence[float]] = None,
+        max_snapping_radius_m: Optional[float] = None,
     ) -> None:
         resolved_key = api_key if api_key is not None else settings.OPENROUTESERVICE_API_KEY
         self.api_key = resolved_key.strip() if (resolved_key and isinstance(resolved_key, str)) else None
@@ -99,6 +102,21 @@ class ORSRoutingProvider(BaseRoutingProvider):
             max_alternative_distance_m
             if max_alternative_distance_m is not None
             else getattr(settings, "ORS_MAX_ALTERNATIVE_DISTANCE_METERS", 100000.0)
+        )
+        self.default_snapping_radius_m = (
+            default_snapping_radius_m
+            if default_snapping_radius_m is not None
+            else getattr(settings, "ORS_DEFAULT_SNAPPING_RADIUS_METERS", 350.0)
+        )
+        self.snapping_retry_radii_m = (
+            list(snapping_retry_radii_m)
+            if snapping_retry_radii_m is not None
+            else list(getattr(settings, "ORS_SNAPPING_RETRY_RADII_METERS", [1000.0, 2000.0, 3000.0]))
+        )
+        self.max_snapping_radius_m = (
+            max_snapping_radius_m
+            if max_snapping_radius_m is not None
+            else getattr(settings, "ORS_MAX_SNAPPING_RADIUS_METERS", 3000.0)
         )
 
     @property
@@ -117,18 +135,37 @@ class ORSRoutingProvider(BaseRoutingProvider):
         return url
 
     @staticmethod
-    def _extract_error_message(response: httpx.Response) -> str:
-        """Safely extract error message or detail string from upstream response."""
+    def _parse_ors_error(response: httpx.Response) -> tuple[Optional[int], str]:
+        """Safely extract error code and message from upstream response."""
         try:
             err_json = response.json()
             if isinstance(err_json, dict) and "error" in err_json:
                 err = err_json["error"]
-                if isinstance(err, dict) and "message" in err:
-                    return str(err["message"])
-                return str(err)
+                if isinstance(err, dict):
+                    code = err.get("code")
+                    msg = err.get("message", "")
+                    return (int(code) if code is not None else None), str(msg)
+                return None, str(err)
         except Exception:
             pass
-        return response.text[:200]
+        return None, response.text[:200]
+
+    @staticmethod
+    def _extract_error_message(response: httpx.Response) -> str:
+        """Safely extract error message or detail string from upstream response."""
+        _, msg = ORSRoutingProvider._parse_ors_error(response)
+        return msg
+
+    @staticmethod
+    def _extract_failing_coordinate_indices(err_msg: str) -> list[int]:
+        """Identify which coordinate index (0 or 1) caused the ORS 2010 error."""
+        msg_lower = err_msg.lower()
+        indices: list[int] = []
+        if "coordinate 0" in msg_lower or "point 0" in msg_lower:
+            indices.append(0)
+        if "coordinate 1" in msg_lower or "point 1" in msg_lower:
+            indices.append(1)
+        return indices
 
     @staticmethod
     def _is_alternative_route_limit_error(err_msg: str) -> bool:
@@ -216,6 +253,8 @@ class ORSRoutingProvider(BaseRoutingProvider):
         }
 
         url = self._build_url()
+        origin_expanded_used = False
+        dest_expanded_used = False
 
         try:
             client = self._http_client or httpx.Client(timeout=self.timeout_seconds)
@@ -235,11 +274,81 @@ class ORSRoutingProvider(BaseRoutingProvider):
                         )
                         payload_primary = {k: v for k, v in payload.items() if k != "alternative_routes"}
                         response = client.post(url, json=payload_primary, headers=headers)
+
+                # Progressive road-snapping retry for mountain settlements (ORS error 2010)
+                if response.status_code == 404:
+                    err_code, err_msg = self._parse_ors_error(response)
+                    if err_code == 2010:
+                        logger.info(
+                            "ORS returned error 2010 (routable point not found with default %sm radius): %s. "
+                            "Initiating controlled progressive road-snapping retries.",
+                            self.default_snapping_radius_m,
+                            err_msg,
+                        )
+                        failing_indices = self._extract_failing_coordinate_indices(err_msg)
+                        if not failing_indices:
+                            failing_indices = [0, 1]
+                        current_radii = [self.default_snapping_radius_m, self.default_snapping_radius_m]
+
+                        for retry_radius in self.snapping_retry_radii_m:
+                            if retry_radius > self.max_snapping_radius_m:
+                                continue
+
+                            for idx in failing_indices:
+                                current_radii[idx] = retry_radius
+
+                            payload_retry = dict(payload)
+                            payload_retry["radiuses"] = list(current_radii)
+
+                            logger.info(
+                                "Retrying ORS routing with expanded snapping radiuses=%s (max allowed=%sm)",
+                                current_radii,
+                                self.max_snapping_radius_m,
+                            )
+
+                            response = client.post(url, json=payload_retry, headers=headers)
+
+                            if response.status_code == 400 and "alternative_routes" in payload_retry:
+                                err_m = self._extract_error_message(response)
+                                if self._is_alternative_route_limit_error(err_m):
+                                    payload_primary_retry = {
+                                        k: v for k, v in payload_retry.items() if k != "alternative_routes"
+                                    }
+                                    response = client.post(url, json=payload_primary_retry, headers=headers)
+
+                            if response.status_code == 200:
+                                origin_expanded_used = current_radii[0] > self.default_snapping_radius_m
+                                dest_expanded_used = current_radii[1] > self.default_snapping_radius_m
+                                logger.info(
+                                    "ORS routing succeeded with expanded snapping radiuses=%s (origin_expanded=%s, dest_expanded=%s)",
+                                    current_radii,
+                                    origin_expanded_used,
+                                    dest_expanded_used,
+                                )
+                                break
+
+                            if response.status_code == 404:
+                                retry_code, retry_m = self._parse_ors_error(response)
+                                if retry_code == 2010:
+                                    new_failing = self._extract_failing_coordinate_indices(retry_m)
+                                    for nf in new_failing:
+                                        if nf not in failing_indices:
+                                            failing_indices.append(nf)
+                                    continue
+                                else:
+                                    break
+                            else:
+                                break
             finally:
                 if self._http_client is None:
                     client.close()
 
             if response.status_code == 404:
+                final_code, _ = self._parse_ors_error(response)
+                if final_code == 2010:
+                    raise NoRouteFoundError(
+                        f"The selected location could not be connected to a drivable road within the maximum allowed access distance of {int(self.max_snapping_radius_m)}m. Please select a location closer to an accessible road."
+                    )
                 raise NoRouteFoundError(f"No route found between ({orig_lon}, {orig_lat}) and ({dest_lon}, {dest_lat})")
 
             if response.status_code in (401, 403):
@@ -266,7 +375,15 @@ class ORSRoutingProvider(BaseRoutingProvider):
             except Exception as e:
                 raise RoutingProviderError(f"Failed to decode JSON from OpenRouteService response: {e}") from e
 
-            return self.parse_ors_response(data, profile=self.profile)
+            return self.parse_ors_response(
+                data,
+                profile=self.profile,
+                requested_origin=(orig_lon, orig_lat),
+                requested_destination=(dest_lon, dest_lat),
+                default_snapping_radius_m=self.default_snapping_radius_m,
+                origin_expanded_used=origin_expanded_used,
+                dest_expanded_used=dest_expanded_used,
+            )
 
         except (RoutingError, InvalidCoordinateError):
             raise
@@ -278,7 +395,15 @@ class ORSRoutingProvider(BaseRoutingProvider):
             raise RoutingNetworkError(f"Network error querying OpenRouteService: {e}") from e
 
     @staticmethod
-    def parse_ors_response(data: Dict[str, Any], profile: str = "driving-car") -> List[NormalizedRoute]:
+    def parse_ors_response(
+        data: Dict[str, Any],
+        profile: str = "driving-car",
+        requested_origin: Optional[Tuple[float, float]] = None,
+        requested_destination: Optional[Tuple[float, float]] = None,
+        default_snapping_radius_m: float = 350.0,
+        origin_expanded_used: bool = False,
+        dest_expanded_used: bool = False,
+    ) -> List[NormalizedRoute]:
         """Parse raw OpenRouteService response (GeoJSON FeatureCollection or routes JSON) into NormalizedRoute list."""
         if not isinstance(data, dict):
             raise RoutingProviderError("OpenRouteService payload is not a valid JSON dictionary.")
@@ -323,6 +448,33 @@ class ORSRoutingProvider(BaseRoutingProvider):
                 route_id = "primary_route" if idx == 0 else f"alternative_route_{idx}"
                 desc = "Primary Corridor Alignment" if idx == 0 else f"Alternative Route Alignment {idx}"
 
+                route_metadata = dict(props) if isinstance(props, dict) else {}
+                if requested_origin is not None and requested_destination is not None:
+                    snap_orig = coords[0] if coords else requested_origin
+                    snap_dest = coords[-1] if coords else requested_destination
+                    snap_dist_orig = round(
+                        approximate_distance_meters(requested_origin[0], requested_origin[1], snap_orig[0], snap_orig[1]),
+                        2,
+                    )
+                    snap_dist_dest = round(
+                        approximate_distance_meters(
+                            requested_destination[0], requested_destination[1], snap_dest[0], snap_dest[1]
+                        ),
+                        2,
+                    )
+                    route_metadata["requested_origin"] = [requested_origin[0], requested_origin[1]]
+                    route_metadata["requested_destination"] = [requested_destination[0], requested_destination[1]]
+                    route_metadata["snapped_origin"] = [round(snap_orig[0], 6), round(snap_orig[1], 6)]
+                    route_metadata["snapped_destination"] = [round(snap_dest[0], 6), round(snap_dest[1], 6)]
+                    route_metadata["snapping_distance_origin_m"] = snap_dist_orig
+                    route_metadata["snapping_distance_destination_m"] = snap_dist_dest
+                    route_metadata["is_origin_snapped"] = bool(
+                        origin_expanded_used or snap_dist_orig > default_snapping_radius_m
+                    )
+                    route_metadata["is_destination_snapped"] = bool(
+                        dest_expanded_used or snap_dist_dest > default_snapping_radius_m
+                    )
+
                 normalized_routes.append(
                     NormalizedRoute(
                         route_id=route_id,
@@ -332,7 +484,7 @@ class ORSRoutingProvider(BaseRoutingProvider):
                         provider="OPENROUTESERVICE",
                         profile=profile,
                         summary=desc,
-                        metadata=props,
+                        metadata=route_metadata,
                     )
                 )
 
@@ -369,6 +521,33 @@ class ORSRoutingProvider(BaseRoutingProvider):
                 route_id = "primary_route" if idx == 0 else f"alternative_route_{idx}"
                 desc = "Primary Corridor Alignment" if idx == 0 else f"Alternative Route Alignment {idx}"
 
+                route_metadata = dict(summary) if isinstance(summary, dict) else {}
+                if requested_origin is not None and requested_destination is not None:
+                    snap_orig = coords[0] if coords else requested_origin
+                    snap_dest = coords[-1] if coords else requested_destination
+                    snap_dist_orig = round(
+                        approximate_distance_meters(requested_origin[0], requested_origin[1], snap_orig[0], snap_orig[1]),
+                        2,
+                    )
+                    snap_dist_dest = round(
+                        approximate_distance_meters(
+                            requested_destination[0], requested_destination[1], snap_dest[0], snap_dest[1]
+                        ),
+                        2,
+                    )
+                    route_metadata["requested_origin"] = [requested_origin[0], requested_origin[1]]
+                    route_metadata["requested_destination"] = [requested_destination[0], requested_destination[1]]
+                    route_metadata["snapped_origin"] = [round(snap_orig[0], 6), round(snap_orig[1], 6)]
+                    route_metadata["snapped_destination"] = [round(snap_dest[0], 6), round(snap_dest[1], 6)]
+                    route_metadata["snapping_distance_origin_m"] = snap_dist_orig
+                    route_metadata["snapping_distance_destination_m"] = snap_dist_dest
+                    route_metadata["is_origin_snapped"] = bool(
+                        origin_expanded_used or snap_dist_orig > default_snapping_radius_m
+                    )
+                    route_metadata["is_destination_snapped"] = bool(
+                        dest_expanded_used or snap_dist_dest > default_snapping_radius_m
+                    )
+
                 normalized_routes.append(
                     NormalizedRoute(
                         route_id=route_id,
@@ -378,7 +557,7 @@ class ORSRoutingProvider(BaseRoutingProvider):
                         provider="OPENROUTESERVICE",
                         profile=profile,
                         summary=desc,
-                        metadata=summary,
+                        metadata=route_metadata,
                     )
                 )
 

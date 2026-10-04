@@ -12,6 +12,9 @@ WEIGHT_PROXIMITY: float = 0.20
 WEIGHT_DENSITY: float = 0.10
 WEIGHT_EXPOSURE: float = 0.05
 
+# Partial-Data Scoring Denominator when is_cut_slope is unavailable (0.35 + 0.30 + 0.20 + 0.10)
+PARTIAL_WEIGHT_DENOMINATOR: float = 0.95
+
 # Slope Sigmoidal Parameters
 SLOPE_MIN_THRESHOLD_DEG: float = 15.0
 SLOPE_MAX_THRESHOLD_DEG: float = 60.0

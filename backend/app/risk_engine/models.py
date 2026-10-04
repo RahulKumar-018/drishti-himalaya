@@ -27,6 +27,7 @@ class SegmentRiskResult:
     sub_scores: dict[str, float]
     weighted_contributions: dict[str, float]
     factor_details: dict[str, FactorScoreBreakdown]
+    is_partial: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary matching RISK_ENGINE.md format."""
@@ -36,6 +37,7 @@ class SegmentRiskResult:
             "color_hex": self.color_hex,
             "sub_scores": self.sub_scores,
             "weighted_contributions": self.weighted_contributions,
+            "is_partial": self.is_partial,
         }
 
     def __getitem__(self, item: str) -> Any:

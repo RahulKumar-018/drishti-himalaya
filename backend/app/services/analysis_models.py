@@ -120,6 +120,14 @@ class AnalysisRouteResult(BaseModel):
     recommendation_text: Optional[str] = Field(default=None, description="Driver safety guidance token or text.")
     high_risk_segment_count: int = Field(default=0, ge=0, description="Count of segments classified as HIGH risk.")
     severe_risk_segment_count: int = Field(default=0, ge=0, description="Count of segments classified as SEVERE hazard.")
+    requested_origin: Optional[List[float]] = Field(default=None, description="User requested origin [lon, lat].")
+    requested_destination: Optional[List[float]] = Field(default=None, description="User requested destination [lon, lat].")
+    snapped_origin: Optional[List[float]] = Field(default=None, description="Actual road access origin [lon, lat].")
+    snapped_destination: Optional[List[float]] = Field(default=None, description="Actual road access destination [lon, lat].")
+    snapping_distance_origin_m: float = Field(default=0.0, ge=0.0, description="Origin road snapping distance in meters.")
+    snapping_distance_destination_m: float = Field(default=0.0, ge=0.0, description="Destination road snapping distance in meters.")
+    is_origin_snapped: bool = Field(default=False, description="True if origin required expanded road-snapping.")
+    is_destination_snapped: bool = Field(default=False, description="True if destination required expanded road-snapping.")
 
     def to_geojson(self) -> dict[str, Any]:
         """Export all segment features as standard GeoJSON FeatureCollection."""

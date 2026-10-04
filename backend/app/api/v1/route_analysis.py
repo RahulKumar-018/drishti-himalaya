@@ -71,6 +71,14 @@ def post_route_analyze(request: AnalyzeRouteRequest) -> AnalyzeRouteResponse:
                 f"segments, but {missing_terrain_segs} segment(s) lack local DEM tile coverage. "
                 "Risk engine scores are not fabricated for incomplete segments."
             )
+        elif r.route_risk is not None and "is_cut_slope" in r.data_availability.missing_features:
+            advisory = (
+                "Partial hazard assessment: Risk scores were calculated using verified available factors "
+                "(Copernicus DEM terrain, Open-Meteo precipitation, and GSI landslide inventory). "
+                "Cut-slope information is unavailable for this route. "
+                "The result is therefore a PARTIAL assessment. "
+                "No missing factor was assumed to be safe."
+            )
         else:
             missing_factors = [
                 f for f in r.data_availability.missing_features
@@ -84,6 +92,19 @@ def post_route_analyze(request: AnalyzeRouteRequest) -> AnalyzeRouteResponse:
                 "Risk engine scores are not fabricated without complete verified hazard inputs."
             )
 
+        snapping_notes: list[str] = []
+        if r.is_origin_snapped:
+            snapping_notes.append(
+                f"Origin was approximately {int(round(r.snapping_distance_origin_m))}m from the nearest drivable road. "
+                "Routing was calculated from the nearest accessible road point."
+            )
+        if r.is_destination_snapped:
+            snapping_notes.append(
+                f"Destination was approximately {int(round(r.snapping_distance_destination_m))}m from the nearest drivable road. "
+                "Routing was calculated from the nearest accessible road point."
+            )
+        if snapping_notes:
+            advisory = f"{advisory} {' '.join(snapping_notes)}"
 
         route_infos.append(
             RouteInfo(
@@ -100,6 +121,14 @@ def post_route_analyze(request: AnalyzeRouteRequest) -> AnalyzeRouteResponse:
                 recommendation=r.recommendation_text or "PARTIAL_ASSESSMENT_MISSING_DATA",
                 advisory_text=advisory,
                 geojson=fc,
+                requested_origin=r.requested_origin,
+                requested_destination=r.requested_destination,
+                snapped_origin=r.snapped_origin,
+                snapped_destination=r.snapped_destination,
+                snapping_distance_origin_m=round(r.snapping_distance_origin_m, 2),
+                snapping_distance_destination_m=round(r.snapping_distance_destination_m, 2),
+                is_origin_snapped=r.is_origin_snapped,
+                is_destination_snapped=r.is_destination_snapped,
             )
         )
 

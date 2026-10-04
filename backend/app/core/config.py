@@ -112,6 +112,22 @@ class Settings(BaseSettings):
         ),
         description="Maximum approximated route distance in meters supported by HeiGIT native alternative-route algorithm.",
     )
+    ORS_DEFAULT_SNAPPING_RADIUS_METERS: float = Field(
+        default=350.0,
+        gt=0,
+        validation_alias=AliasChoices("ORS_DEFAULT_SNAPPING_RADIUS_METERS", "ORS_DEFAULT_SNAPPING_RADIUS_M"),
+        description="Default road-snapping search radius in meters for ORS driving-car profile.",
+    )
+    ORS_SNAPPING_RETRY_RADII_METERS: list[float] = Field(
+        default=[1000.0, 2000.0, 3000.0],
+        description="Progressive search radius thresholds in meters when error 2010 occurs.",
+    )
+    ORS_MAX_SNAPPING_RADIUS_METERS: float = Field(
+        default=3000.0,
+        gt=0,
+        validation_alias=AliasChoices("ORS_MAX_SNAPPING_RADIUS_METERS", "ORS_MAX_SNAPPING_RADIUS_M"),
+        description="Maximum permissible road-snapping radius in meters for Himalayan settlements.",
+    )
     OPEN_METEO_BASE_URL: str = Field(
         default="https://api.open-meteo.com/v1/forecast",
         description="Base URL for Open-Meteo weather forecasts.",

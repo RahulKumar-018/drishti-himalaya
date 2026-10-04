@@ -176,6 +176,30 @@ def to_attribution_response(stored: StoredSegment) -> SegmentAttributionResponse
             is_risk_complete=True,
             missing_features=[],
         )
+    elif s.risk_result is not None:
+        rr = s.risk_result
+        if rr.risk_category == RiskTier.SEVERE:
+            advisory = "CRITICAL: Severe geotechnical failure hazard. Transit not advised without escort (Partial assessment: cut-slope unavailable)."
+        elif rr.risk_category == RiskTier.HIGH:
+            advisory = "Elevated probability of slope debris instability under current saturation (Partial assessment: cut-slope unavailable)."
+        elif rr.risk_category == RiskTier.MODERATE:
+            advisory = "Moderate hazard. Exercise standard mountain driving precautions (Partial assessment: cut-slope unavailable)."
+        else:
+            advisory = "Low geotechnical hazard under current meteorological conditions (Partial assessment: cut-slope unavailable)."
+
+        return SegmentAttributionResponse(
+            segment_id=stored.segment_id,
+            corridor=stored.corridor,
+            chainage_km=round(s.start_chainage_km, 2),
+            coordinates=coords,
+            overall_risk_score=rr.risk_score,
+            risk_tier=rr.risk_category,
+            color_hex=rr.color_hex,
+            factor_attribution=None,
+            geotechnical_advisory=advisory,
+            is_risk_complete=False,
+            missing_features=s.missing_features,
+        )
     else:
         # Incomplete data: report null scores honestly
         return SegmentAttributionResponse(

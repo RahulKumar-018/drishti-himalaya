@@ -6,7 +6,7 @@ and factor explainability as specified in RISK_ENGINE.md.
 """
 
 import math
-from typing import Sequence
+from typing import Optional, Sequence
 
 from backend.app.risk_engine.constants import (
     ARI_DRAINAGE_LAMBDA,
@@ -19,6 +19,7 @@ from backend.app.risk_engine.constants import (
     EXPOSURE_BASELINE_SCORE,
     EXPOSURE_HIGH_SCORE,
     EXPOSURE_SLOPE_THRESHOLD_DEG,
+    PARTIAL_WEIGHT_DENOMINATOR,
     PROXIMITY_DECAY_SCALE_D0_M,
     SLOPE_CLIFF_CAP_SCORE,
     SLOPE_LOGISTIC_STEEPNESS,
@@ -185,51 +186,42 @@ def calculate_segment_risk(
     ari_mm: float,
     dist_scar_m: float,
     scar_density_1km: float | int,
-    is_cut_slope: bool = True,
+    is_cut_slope: Optional[bool] = None,
 ) -> SegmentRiskResult:
     """Evaluate 250m road segment hazard exposure using MCDA mechanistic formulation.
 
-    R_seg = 0.35*S_slope + 0.30*S_rain + 0.20*S_prox + 0.10*S_density + 0.05*S_exp
+    Full-data formula (when is_cut_slope is True or False):
+        R_seg = 0.35*S_slope + 0.30*S_rain + 0.20*S_prox + 0.10*S_density + 0.05*S_exp
+
+    Partial-data formula (when is_cut_slope is None / unavailable):
+        R_partial = (0.35*S_slope + 0.30*S_rain + 0.20*S_prox + 0.10*S_density) / 0.95
+        Denominator is 0.95 (0.35 + 0.30 + 0.20 + 0.10).
+        S_exp is not fabricated or assumed safe/unsafe.
     """
     s_slope = slope_score(slope_deg)
     s_rain = rainfall_score(p24_mm, p72_mm, ari_mm)
     s_prox = proximity_score(dist_scar_m)
     s_density = density_score(scar_density_1km)
-    s_exp = exposure_score(slope_deg, is_cut_slope)
 
     w_slope = WEIGHT_SLOPE * s_slope
     w_rain = WEIGHT_RAIN * s_rain
     w_prox = WEIGHT_PROXIMITY * s_prox
     w_density = WEIGHT_DENSITY * s_density
-    w_exp = WEIGHT_EXPOSURE * s_exp
 
-    r_seg = w_slope + w_rain + w_prox + w_density + w_exp
-    r_seg_clamped = max(0.0, min(100.0, r_seg))
-
-    tier, color = get_risk_tier_and_color(r_seg_clamped)
-
-    # Factor explainability and qualitative status attribution
+    # Qualitative status descriptions for verified factors
     status_slope = "CRITICAL" if s_slope >= 85.0 else ("ELEVATED" if s_slope >= 50.0 else "NORMAL")
-    desc_slope = (
-        f"Steep cut-slope ({slope_deg:.1f}°) exceeding 35° natural angle of repose"
-        if slope_deg >= 35.0
-        else f"Stable topographic terrain gradient ({slope_deg:.1f}°)"
-    )
-
     status_rain = "CRITICAL" if s_rain >= 80.0 else ("ELEVATED" if s_rain >= 40.0 else "LOW")
     desc_rain = (
         f"Rainfall approaching initiation threshold (24h: {p24_mm:.1f}mm, 72h: {p72_mm:.1f}mm)"
         if s_rain >= 50.0
         else f"Sub-threshold precipitation (24h: {p24_mm:.1f}mm)"
     )
-
     status_prox = "HIGH" if dist_scar_m <= 150.0 else ("MODERATE" if dist_scar_m <= 350.0 else "LOW")
     desc_prox = (
         f"Within {dist_scar_m:.1f}m of mapped historical landslide failure"
         if dist_scar_m <= 350.0
         else f"Well clear of historical landslide scars ({dist_scar_m:.1f}m distance)"
     )
-
     status_density = "HIGH" if scar_density_1km >= 5.0 else ("MODERATE" if scar_density_1km >= 2.0 else "LOW")
     desc_density = (
         f"Elevated failure clustering near tectonic thrust zone ({scar_density_1km:.1f} scars/km²)"
@@ -237,12 +229,84 @@ def calculate_segment_risk(
         else f"Sparse historical failure density ({scar_density_1km:.1f} scars/km²)"
     )
 
-    status_exp = "HIGH" if (is_cut_slope and slope_deg > 30.0) else "LOW"
-    desc_exp = (
-        "Active anthropogenic highway cut-slope toe excavation zone"
-        if (is_cut_slope and slope_deg > 30.0)
-        else "Natural slope or low-angle road alignment"
+    if is_cut_slope is not None:
+        # Full-data scoring path
+        desc_slope = (
+            f"Steep cut-slope ({slope_deg:.1f}°) exceeding 35° natural angle of repose"
+            if slope_deg >= 35.0
+            else f"Stable topographic terrain gradient ({slope_deg:.1f}°)"
+        )
+        s_exp = exposure_score(slope_deg, is_cut_slope)
+        w_exp = WEIGHT_EXPOSURE * s_exp
+        r_seg = w_slope + w_rain + w_prox + w_density + w_exp
+        r_seg_clamped = max(0.0, min(100.0, r_seg))
+        tier, color = get_risk_tier_and_color(r_seg_clamped)
+
+        status_exp = "HIGH" if (is_cut_slope and slope_deg > 30.0) else "LOW"
+        desc_exp = (
+            "Active anthropogenic highway cut-slope toe excavation zone"
+            if (is_cut_slope and slope_deg > 30.0)
+            else "Natural slope or low-angle road alignment"
+        )
+
+        factor_details = {
+            "slope": FactorScoreBreakdown(
+                sub_score=round(s_slope, 2),
+                weight=WEIGHT_SLOPE,
+                weighted_contribution=round(w_slope, 2),
+                status=status_slope,
+                description=desc_slope,
+            ),
+            "rain": FactorScoreBreakdown(
+                sub_score=round(s_rain, 2),
+                weight=WEIGHT_RAIN,
+                weighted_contribution=round(w_rain, 2),
+                status=status_rain,
+                description=desc_rain,
+            ),
+            "prox": FactorScoreBreakdown(
+                sub_score=round(s_prox, 2),
+                weight=WEIGHT_PROXIMITY,
+                weighted_contribution=round(w_prox, 2),
+                status=status_prox,
+                description=desc_prox,
+            ),
+            "density": FactorScoreBreakdown(
+                sub_score=round(s_density, 2),
+                weight=WEIGHT_DENSITY,
+                weighted_contribution=round(w_density, 2),
+                status=status_density,
+                description=desc_density,
+            ),
+            "exp": FactorScoreBreakdown(
+                sub_score=round(s_exp, 2),
+                weight=WEIGHT_EXPOSURE,
+                weighted_contribution=round(w_exp, 2),
+                status=status_exp,
+                description=desc_exp,
+            ),
+        }
+
+        return SegmentRiskResult(
+            risk_score=round(r_seg_clamped, 2),
+            risk_category=tier,
+            color_hex=color,
+            sub_scores={k: round(v.sub_score, 2) for k, v in factor_details.items()},
+            weighted_contributions={k: round(v.weighted_contribution, 2) for k, v in factor_details.items()},
+            factor_details=factor_details,
+            is_partial=False,
+        )
+
+    # Documented Partial-data scoring path (is_cut_slope is None)
+    desc_slope = (
+        f"Steep topographic slope ({slope_deg:.1f}°) exceeding 35° natural angle of repose"
+        if slope_deg >= 35.0
+        else f"Stable topographic terrain gradient ({slope_deg:.1f}°)"
     )
+    numerator = w_slope + w_rain + w_prox + w_density
+    r_partial = numerator / PARTIAL_WEIGHT_DENOMINATOR
+    r_partial_clamped = max(0.0, min(100.0, r_partial))
+    tier, color = get_risk_tier_and_color(r_partial_clamped)
 
     factor_details = {
         "slope": FactorScoreBreakdown(
@@ -273,20 +337,14 @@ def calculate_segment_risk(
             status=status_density,
             description=desc_density,
         ),
-        "exp": FactorScoreBreakdown(
-            sub_score=round(s_exp, 2),
-            weight=WEIGHT_EXPOSURE,
-            weighted_contribution=round(w_exp, 2),
-            status=status_exp,
-            description=desc_exp,
-        ),
     }
 
     return SegmentRiskResult(
-        risk_score=round(r_seg_clamped, 2),
+        risk_score=round(r_partial_clamped, 2),
         risk_category=tier,
         color_hex=color,
         sub_scores={k: round(v.sub_score, 2) for k, v in factor_details.items()},
         weighted_contributions={k: round(v.weighted_contribution, 2) for k, v in factor_details.items()},
         factor_details=factor_details,
+        is_partial=True,
     )

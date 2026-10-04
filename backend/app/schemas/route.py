@@ -76,6 +76,14 @@ class RouteInfo(BaseModel):
         ...,
         description="GeoJSON FeatureCollection containing all 250m evaluated segments.",
     )
+    requested_origin: list[float] | None = Field(default=None, description="User requested origin [lon, lat].")
+    requested_destination: list[float] | None = Field(default=None, description="User requested destination [lon, lat].")
+    snapped_origin: list[float] | None = Field(default=None, description="Snapped road access point for origin [lon, lat].")
+    snapped_destination: list[float] | None = Field(default=None, description="Snapped road access point for destination [lon, lat].")
+    snapping_distance_origin_m: float = Field(default=0.0, description="Distance from requested origin to nearest road access in meters.")
+    snapping_distance_destination_m: float = Field(default=0.0, description="Distance from requested destination to nearest road access in meters.")
+    is_origin_snapped: bool = Field(default=False, description="True if origin required expanded snapping beyond default radius.")
+    is_destination_snapped: bool = Field(default=False, description="True if destination required expanded snapping beyond default radius.")
 
 
 class AnalyzeRouteResponse(BaseModel):

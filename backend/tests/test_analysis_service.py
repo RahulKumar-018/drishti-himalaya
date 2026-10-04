@@ -168,7 +168,9 @@ class TestTerrainAndCutSlopeSafety:
 
     def test_partial_analysis_state_is_represented_clearly(self):
         """When terrain is missing, status is PARTIAL, route risk is None, and recommendation is unavailable."""
-        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO")
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        empty_dem = CopernicusDEMProvider(dem_dir="non_existent_dem_dir")
+        res = analyze_route((78.35, 30.12), (78.55, 30.28), data_mode="DEMO", terrain_provider=empty_dem)
         assert res.status == AnalysisStatus.PARTIAL
         assert res.recommendation_available is False
         assert res.recommended_route_id is None

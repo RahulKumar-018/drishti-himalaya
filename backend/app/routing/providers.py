@@ -149,7 +149,18 @@ class DemoRoutingProvider(BaseRoutingProvider):
                         provider=self.provider_name,
                         profile=data.get("profile", "driving-car"),
                         summary=r.get("summary", "DEMO Highway Alignment"),
-                        metadata={"source": "DEMO_FIXTURE", "fixture_path": str(self.fixture_path)},
+                        metadata={
+                            "source": "DEMO_FIXTURE",
+                            "fixture_path": str(self.fixture_path),
+                            "requested_origin": [orig_lon, orig_lat],
+                            "requested_destination": [dest_lon, dest_lat],
+                            "snapped_origin": [orig_lon, orig_lat],
+                            "snapped_destination": [dest_lon, dest_lat],
+                            "snapping_distance_origin_m": 0.0,
+                            "snapping_distance_destination_m": 0.0,
+                            "is_origin_snapped": False,
+                            "is_destination_snapped": False,
+                        },
                     )
                 )
 

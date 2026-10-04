@@ -204,7 +204,9 @@ def analyze_route(
 
             route_missing_features.update(seg_missing)
 
-            # Strict risk engine evaluation: only evaluate when all required factors exist
+            # Strict risk engine evaluation:
+            # 1. Full evaluation if all required factors exist
+            # 2. Documented partial evaluation ONLY when is_cut_slope is null and other factors exist
             is_complete = len(seg_missing) == 0
             risk_res = None
             if is_complete:
@@ -216,6 +218,22 @@ def analyze_route(
                     dist_scar_m=dist_scar,
                     scar_density_1km=density,
                     is_cut_slope=cut_slope,  # type: ignore
+                )
+            elif (
+                cut_slope is None
+                and slope is not None
+                and p24 is not None
+                and p72 is not None
+                and ari is not None
+            ):
+                risk_res = calculate_segment_risk(
+                    slope_deg=slope,
+                    p24_mm=p24,
+                    p72_mm=p72,
+                    ari_mm=ari,
+                    dist_scar_m=dist_scar,
+                    scar_density_1km=density,
+                    is_cut_slope=None,
                 )
 
             analyzed_segments.append(
@@ -241,14 +259,15 @@ def analyze_route(
             )
 
         # 3. Route Risk Aggregation & Multi-Objective Pareto Evaluation
-        all_segments_complete = all(s.is_risk_complete for s in analyzed_segments)
+        all_segments_complete = len(analyzed_segments) > 0 and all(s.is_risk_complete for s in analyzed_segments)
+        all_segments_scored = len(analyzed_segments) > 0 and all(s.risk_result is not None for s in analyzed_segments)
         route_risk = None
         route_obj = None
         high_risk_count = 0
         severe_risk_count = 0
         rec_text = "PARTIAL_ASSESSMENT_MISSING_DATA"
 
-        if all_segments_complete and len(analyzed_segments) > 0:
+        if all_segments_scored:
             risk_scores = [s.risk_result.risk_score for s in analyzed_segments if s.risk_result]
             lengths = [s.segment_length_m for s in analyzed_segments]
 
@@ -281,16 +300,33 @@ def analyze_route(
                     elif s.risk_result.risk_category == RiskTier.SEVERE:
                         severe_risk_count += 1
 
-            if severe_risk_count > 0:
-                rec_text = "CAUTION_SEVERE_HAZARD"
-            elif high_risk_count > 0:
-                rec_text = "CAUTION_HIGH_RISK"
+            if all_segments_complete:
+                if severe_risk_count > 0:
+                    rec_text = "CAUTION_SEVERE_HAZARD"
+                elif high_risk_count > 0:
+                    rec_text = "CAUTION_HIGH_RISK"
+                else:
+                    rec_text = "RECOMMENDED_ROUTE"
+                route_status = AnalysisStatus.COMPLETE
             else:
-                rec_text = "RECOMMENDED_ROUTE"
-
-            route_status = AnalysisStatus.COMPLETE
+                route_status = AnalysisStatus.PARTIAL
+                rec_text = "PARTIAL_ASSESSMENT_MISSING_DATA"
         else:
             route_status = AnalysisStatus.PARTIAL
+
+        meta = norm_route.metadata or {}
+        req_orig = meta.get("requested_origin") or [origin[0], origin[1]]
+        req_dest = meta.get("requested_destination") or [destination[0], destination[1]]
+        snap_orig = meta.get("snapped_origin") or (
+            list(norm_route.geometry_coords[0]) if norm_route.geometry_coords else req_orig
+        )
+        snap_dest = meta.get("snapped_destination") or (
+            list(norm_route.geometry_coords[-1]) if norm_route.geometry_coords else req_dest
+        )
+        snap_dist_orig = float(meta.get("snapping_distance_origin_m", 0.0))
+        snap_dist_dest = float(meta.get("snapping_distance_destination_m", 0.0))
+        is_orig_snap = bool(meta.get("is_origin_snapped", False))
+        is_dest_snap = bool(meta.get("is_destination_snapped", False))
 
         evaluated_routes.append(
             AnalysisRouteResult(
@@ -316,11 +352,19 @@ def analyze_route(
                 recommendation_text=rec_text,
                 high_risk_segment_count=high_risk_count,
                 severe_risk_segment_count=severe_risk_count,
+                requested_origin=req_orig,
+                requested_destination=req_dest,
+                snapped_origin=snap_orig,
+                snapped_destination=snap_dest,
+                snapping_distance_origin_m=snap_dist_orig,
+                snapping_distance_destination_m=snap_dist_dest,
+                is_origin_snapped=is_orig_snap,
+                is_destination_snapped=is_dest_snap,
             )
         )
 
     # 4. Multi-Route Pareto Optimization & Route Selection
-    complete_routes = [r for r in evaluated_routes if r.objective is not None]
+    complete_routes = [r for r in evaluated_routes if r.status == AnalysisStatus.COMPLETE and r.objective is not None]
     recommended_id: Optional[str] = None
     rec_available = False
 

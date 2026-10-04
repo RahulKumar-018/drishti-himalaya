@@ -237,13 +237,19 @@ class TestRouteAnalysisExecution:
         self, client: TestClient, pilot_payload: dict
     ) -> None:
         """14. Verify composite route risk remains None when terrain features are missing."""
-        res = client.post("/api/v1/route/analyze", json=pilot_payload)
-        assert res.status_code == 200
-        route = res.json()["routes"][0]
-        assert route["composite_route_risk"] is None
-        assert route["max_bottleneck_risk"] is None
-        assert route["average_segment_risk"] is None
-        assert route["recommendation"] == "PARTIAL_ASSESSMENT_MISSING_DATA"
+        from backend.app.geospatial.terrain import CopernicusDEMProvider
+        with patch("backend.app.api.v1.route_analysis.analyze_route") as mock_analyze:
+            from backend.app.services.analysis_service import analyze_route as real_analyze
+            mock_analyze.side_effect = lambda *args, **kwargs: real_analyze(
+                *args, **{**kwargs, "terrain_provider": CopernicusDEMProvider(dem_dir="non_existent_dem_dir")}
+            )
+            res = client.post("/api/v1/route/analyze", json=pilot_payload)
+            assert res.status_code == 200
+            route = res.json()["routes"][0]
+            assert route["composite_route_risk"] is None
+            assert route["max_bottleneck_risk"] is None
+            assert route["average_segment_risk"] is None
+            assert route["recommendation"] == "PARTIAL_ASSESSMENT_MISSING_DATA"
 
     def test_15_multi_route_response_serializes_correctly(
         self, client: TestClient, pilot_payload: dict
