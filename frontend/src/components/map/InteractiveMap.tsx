@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import {
   MapContainer,
@@ -22,6 +22,10 @@ import {
   MapPin,
   Flag,
   Loader2,
+  MousePointer,
+  Radio,
+  Route,
+  History,
 } from 'lucide-react';
 import {
   PILOT_CORRIDOR_COORDINATES,
@@ -61,22 +65,248 @@ const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 
-// Custom technical beacon icons
-const startBeaconIcon = L.divIcon({
-  className: 'dh-map-beacon dh-map-beacon--start',
-  html: '<span class="dh-map-beacon__pulse"></span><span class="dh-map-beacon__dot"></span>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -14],
-});
+// Historical OSM Road-Cutting Dataset Endpoint (2018 snapshot)
+const HISTORICAL_CUTTINGS_API_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '')
+    ? `${(import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')}/hazard/cuttings`
+    : 'http://127.0.0.1:8000/api/v1/hazard/cuttings';
 
-const endBeaconIcon = L.divIcon({
-  className: 'dh-map-beacon dh-map-beacon--end',
-  html: '<span class="dh-map-beacon__pulse"></span><span class="dh-map-beacon__dot"></span>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -14],
-});
+/**
+ * Historical OSM Road-Cutting Feature (2018 historical snapshot)
+ * Represents excavated highway/path cuts extracted from OSM historical data.
+ */
+export interface HistoricalCuttingTags {
+  cutting?: string;
+  highway?: string;
+  surface?: string;
+  lanes?: string;
+  [key: string]: string | undefined;
+}
+
+export interface HistoricalCuttingFeature {
+  id: number;
+  tags: HistoricalCuttingTags;
+  coordinates: [number, number][]; // [longitude, latitude] as returned by backend API
+}
+
+export interface HistoricalCuttingsResponse {
+  count: number;
+  year: number;
+  source: string;
+  features: HistoricalCuttingFeature[];
+}
+
+// Default Garhwal Himalayan Overview Coordinates
+const HIMALAYAN_DEFAULT_CENTER: [number, number] = [30.38, 79.12];
+const HIMALAYAN_DEFAULT_ZOOM = 9;
+
+/**
+ * Himalayan Hazard Observation Stations
+ * Strategic disaster telemetry and slope monitoring stations across Garhwal Uttarakhand.
+ */
+export interface HazardStation {
+  id: string;
+  name: string;
+  code: string;
+  latitude: number;
+  longitude: number;
+  elevationM: number;
+  district: string;
+  riverBasin: string;
+  riskTier: 'LOW' | 'MODERATE' | 'HIGH';
+  riskScore: number;
+  hazardNote: string;
+  sensors: string;
+}
+
+const HIMALAYAN_OBSERVATION_STATIONS: readonly HazardStation[] = [
+  {
+    id: 'st-01',
+    name: 'Rishikesh Foothill Gateway',
+    code: 'DH-RSK',
+    latitude: 30.0869,
+    longitude: 78.2676,
+    elevationM: 340,
+    district: 'Dehradun / Tehri',
+    riverBasin: 'Ganga Mainstem',
+    riskTier: 'LOW',
+    riskScore: 14.2,
+    hazardNote: 'Foothill fluvial stability and transit gateway',
+    sensors: 'Telemetry Rain Gauge · Seismic Accelerometer',
+  },
+  {
+    id: 'st-02',
+    name: 'Devprayag Confluence Station',
+    code: 'DH-DEV',
+    latitude: 30.1459,
+    longitude: 78.5986,
+    elevationM: 480,
+    district: 'Tehri / Pauri',
+    riverBasin: 'Bhagirathi & Alaknanda Sangam',
+    riskTier: 'LOW',
+    riskScore: 21.8,
+    hazardNote: 'Gorge toe erosion & cut-slope joint fractures',
+    sensors: 'River Stage Monitor · Open-Meteo Telemetry',
+  },
+  {
+    id: 'st-03',
+    name: 'Srinagar Valley Alignment',
+    code: 'DH-SRN',
+    latitude: 30.2224,
+    longitude: 78.7844,
+    elevationM: 560,
+    district: 'Pauri Garhwal',
+    riverBasin: 'Alaknanda Broad Basin',
+    riskTier: 'LOW',
+    riskScore: 16.5,
+    hazardNote: 'Alluvial terrace scour & drainage balance',
+    sensors: 'Hydrological Radar · Automated Weather Station',
+  },
+  {
+    id: 'st-04',
+    name: 'Rudraprayag Sangam Choke',
+    code: 'DH-RUD',
+    latitude: 30.2844,
+    longitude: 78.9811,
+    elevationM: 610,
+    district: 'Rudraprayag',
+    riverBasin: 'Alaknanda & Mandakini Sangam',
+    riskTier: 'MODERATE',
+    riskScore: 36.4,
+    hazardNote: 'Steep canyon cliff erosion & dual basin runoff',
+    sensors: 'Tiltmeter Array · Precipitation Stream',
+  },
+  {
+    id: 'st-05',
+    name: 'Karnaprayag Confluence',
+    code: 'DH-KRN',
+    latitude: 30.2573,
+    longitude: 79.2157,
+    elevationM: 780,
+    district: 'Chamoli',
+    riverBasin: 'Alaknanda & Pindar Sangam',
+    riskTier: 'MODERATE',
+    riskScore: 38.2,
+    hazardNote: 'High-velocity Pindar tributary sediment pulse',
+    sensors: 'Acoustic Bedload Sensor · Rain Gauge',
+  },
+  {
+    id: 'st-06',
+    name: 'Chamoli Canyon Sector',
+    code: 'DH-CHM',
+    latitude: 30.4042,
+    longitude: 79.3364,
+    elevationM: 960,
+    district: 'Chamoli',
+    riverBasin: 'Middle Alaknanda Gorge',
+    riskTier: 'MODERATE',
+    riskScore: 42.1,
+    hazardNote: 'Narrow rock canyon planar shear susceptibility',
+    sensors: 'Borehole Inclinometer · Weather Telemetry',
+  },
+  {
+    id: 'st-07',
+    name: 'Birahi Talus Debris Zone',
+    code: 'DH-BRH',
+    latitude: 30.4180,
+    longitude: 79.3850,
+    elevationM: 1040,
+    district: 'Chamoli',
+    riverBasin: 'Birahi Ganga Confluence',
+    riskTier: 'HIGH',
+    riskScore: 58.7,
+    hazardNote: 'Historical talus cone reactivation during high moisture',
+    sensors: 'Wireline Extensometer · Rainfall Telemetry',
+  },
+  {
+    id: 'st-08',
+    name: 'Pipalkoti Cut-Slope Zone',
+    code: 'DH-PIP',
+    latitude: 30.4289,
+    longitude: 79.4299,
+    elevationM: 1260,
+    district: 'Chamoli',
+    riverBasin: 'Upper Alaknanda',
+    riskTier: 'MODERATE',
+    riskScore: 48.0,
+    hazardNote: 'Excavated highway toe wedge sliding in fractured schists',
+    sensors: 'Piezometer Array · Geophone Station',
+  },
+  {
+    id: 'st-09',
+    name: 'Helang Ravine Choke',
+    code: 'DH-HLG',
+    latitude: 30.5280,
+    longitude: 79.5080,
+    elevationM: 1650,
+    district: 'Chamoli',
+    riverBasin: 'Kalpeshwar / Alaknanda Choke',
+    riskTier: 'HIGH',
+    riskScore: 64.2,
+    hazardNote: 'Severe relief gradient & debris torrent hazard',
+    sensors: 'Automated Rain Gauge · Debris Flow Radar',
+  },
+  {
+    id: 'st-10',
+    name: 'Joshimath Escarpment',
+    code: 'DH-JOS',
+    latitude: 30.5564,
+    longitude: 79.5663,
+    elevationM: 1890,
+    district: 'Chamoli',
+    riverBasin: 'Dhauliganga / Alaknanda Gorge',
+    riskTier: 'HIGH',
+    riskScore: 68.5,
+    hazardNote: 'Sub-surface subsidence & paleolandslide slope creep',
+    sensors: 'DInSAR Ground Radar · Multi-Depth Piezometer',
+  },
+  {
+    id: 'st-11',
+    name: 'Badrinath Shrine Node',
+    code: 'DH-BAD',
+    latitude: 30.7433,
+    longitude: 79.4938,
+    elevationM: 3100,
+    district: 'Chamoli',
+    riverBasin: 'Upper Catchment / Nar-Narayan',
+    riskTier: 'LOW',
+    riskScore: 24.0,
+    hazardNote: 'High-altitude moraine & seasonal snowpack runoff',
+    sensors: 'Snow Water Equivalent Radar · AWS',
+  },
+  {
+    id: 'st-12',
+    name: 'Kedarnath Valley Head',
+    code: 'DH-KED',
+    latitude: 30.7352,
+    longitude: 79.0669,
+    elevationM: 3583,
+    district: 'Rudraprayag',
+    riverBasin: 'Mandakini Glacier Headwaters',
+    riskTier: 'MODERATE',
+    riskScore: 45.0,
+    hazardNote: 'Proglacial outwash channel & moraine surge sensitivity',
+    sensors: 'GLOF Early Warning Radar · Weather Stream',
+  },
+];
+
+// Technical beacon icons
+const getStationIcon = (riskTier: 'LOW' | 'MODERATE' | 'HIGH') => {
+  const colorMap = {
+    LOW: 'var(--risk-low)',
+    MODERATE: 'var(--risk-moderate)',
+    HIGH: 'var(--risk-high)',
+  };
+  const color = colorMap[riskTier];
+
+  return L.divIcon({
+    className: `dh-map-beacon dh-map-beacon--station dh-map-beacon--${riskTier.toLowerCase()}`,
+    html: `<span class="dh-map-beacon__pulse" style="border-color:${color}"></span><span class="dh-map-beacon__dot" style="background-color:${color};box-shadow:0 0 8px ${color}"></span>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
+  });
+};
 
 const originBeaconIcon = L.divIcon({
   className: 'dh-map-beacon dh-map-beacon--origin',
@@ -120,25 +350,53 @@ export {
 };
 
 /**
- * Helper component ensuring Leaflet container recalculates dimensions
- * whenever mounted or resized, and fits corridor / selection bounds smoothly.
+ * Controller ensuring Leaflet recalculates dimensions with ResizeObserver
+ * and handles smart bound fitting without sudden jumps.
  */
 function MapViewController({
   origin,
   destination,
   activeRoute,
+  showCorridorRoute,
+  fitTrigger,
 }: {
   origin?: LocationPoint | null;
   destination?: LocationPoint | null;
   activeRoute?: RouteResult | null;
+  showCorridorRoute?: boolean;
+  fitTrigger?: number;
 }): null {
   const map = useMap();
   const lastTargetKey = useRef<string>('');
 
+  // Auto-resize observer: cleanly invalidates size when layout changes
   useEffect(() => {
-    map.invalidateSize();
+    const container = map.getContainer();
+    if (!container) return;
 
-    const targetKey = `${origin?.id ?? ''}_${origin?.latitude ?? ''}_${destination?.id ?? ''}_${destination?.latitude ?? ''}_${activeRoute?.status ?? ''}_${activeRoute?.geometry?.length ?? 0}`;
+    let resizeTimer: number;
+    const observer = new ResizeObserver(() => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        try {
+          map.invalidateSize({ pan: false });
+        } catch {
+          // container may be unmounting
+        }
+      }, 80);
+    });
+
+    observer.observe(container);
+    return () => {
+      window.clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
+  }, [map]);
+
+  useEffect(() => {
+    map.invalidateSize({ pan: false });
+
+    const targetKey = `${origin?.id ?? ''}_${origin?.latitude ?? ''}_${destination?.id ?? ''}_${destination?.latitude ?? ''}_${activeRoute?.status ?? ''}_${activeRoute?.geometry?.length ?? 0}_${showCorridorRoute ? 'corridor' : 'default'}_${fitTrigger ?? 0}`;
     if (targetKey === lastTargetKey.current) {
       return;
     }
@@ -161,13 +419,16 @@ function MapViewController({
         map.setView([origin.latitude, origin.longitude], 11);
       } else if (destination) {
         map.setView([destination.latitude, destination.longitude], 11);
-      } else {
+      } else if (showCorridorRoute) {
         map.fitBounds(L.latLngBounds(PILOT_CORRIDOR_COORDINATES), { padding: [36, 36] });
+      } else {
+        // Natural Garhwal Himalayan Overview
+        map.setView(HIMALAYAN_DEFAULT_CENTER, HIMALAYAN_DEFAULT_ZOOM);
       }
     } catch {
       // Safe fallback
     }
-  }, [map, origin, destination, activeRoute]);
+  }, [map, origin, destination, activeRoute, showCorridorRoute, fitTrigger]);
 
   return null;
 }
@@ -201,7 +462,9 @@ export interface InteractiveMapProps {
   isSimulated?: boolean;
   scenarioPrecipitation?: number | null;
   onResetScenario?: () => void;
-  // Phase 1 Location Selection Props
+  showCorridorRoute?: boolean;
+  onToggleCorridorRoute?: (show: boolean) => void;
+  // Location Selection Props
   origin?: LocationPoint | null;
   destination?: LocationPoint | null;
   liveLocation?: LiveLocation | null;
@@ -214,8 +477,10 @@ export interface InteractiveMapProps {
   onStartMapSelection?: (mode: 'origin' | 'destination') => void;
   onUseLiveLocation?: () => Promise<void>;
   onResetRouteSelection?: () => void;
+  onSetOrigin?: (loc: LocationPoint) => void;
+  onSetDestination?: (loc: LocationPoint) => void;
   isLocating?: boolean;
-  // Phase 2 Real Road Routing Props
+  // Real Road Routing Props
   activeRoute?: RouteResult | null;
   isRouting?: boolean;
   routingError?: string | null;
@@ -224,13 +489,15 @@ export interface InteractiveMapProps {
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   className,
-  zoom = 9,
+  zoom = HIMALAYAN_DEFAULT_ZOOM,
   segments,
   selectedSegmentId,
   onSelectSegment,
   isSimulated = false,
   scenarioPrecipitation = null,
   onResetScenario,
+  showCorridorRoute: propShowCorridorRoute,
+  onToggleCorridorRoute,
   origin,
   destination,
   liveLocation,
@@ -243,14 +510,36 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onStartMapSelection,
   onUseLiveLocation,
   onResetRouteSelection,
+  onSetOrigin,
+  onSetDestination,
   isLocating = false,
   activeRoute,
   isRouting = false,
   routingError,
   onRetryRouting,
 }) => {
-  // Basemap fallback state: defaults to false if MapTiler API key is present, true if missing
-  const [useFallbackOsm, setUseFallbackOsm] = React.useState(!hasMapTilerKey);
+  // Basemap fallback state
+  const [useFallbackOsm, setUseFallbackOsm] = useState(!hasMapTilerKey);
+
+  // Wheel zoom lock state: disabled by default to protect page scrolling
+  const [wheelZoomEnabled, setWheelZoomEnabled] = useState(false);
+
+  // Layer toggle states
+  const [showStations, setShowStations] = useState(true);
+  const [internalShowCorridor, setInternalShowCorridor] = useState(false);
+  const [showHistoricalCuttings, setShowHistoricalCuttings] = useState<boolean>(true);
+  const [historicalCuttings, setHistoricalCuttings] = useState<HistoricalCuttingFeature[]>([]);
+  const [cuttingsYear, setCuttingsYear] = useState<number>(2018);
+  const [fitTrigger, setFitTrigger] = useState<number>(0);
+
+  const showCorridorRoute =
+    propShowCorridorRoute !== undefined ? propShowCorridorRoute : internalShowCorridor;
+
+  const handleToggleRoute = () => {
+    const nextVal = !showCorridorRoute;
+    setInternalShowCorridor(nextVal);
+    onToggleCorridorRoute?.(nextVal);
+  };
 
   useEffect(() => {
     if (import.meta.env.DEV && !hasMapTilerKey) {
@@ -258,20 +547,82 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, []);
 
-  // If segments are not provided by parent, calculate fallback baseline
+  // Fetch Historical OSM Road-Cutting dataset (2018 historical snapshot)
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+
+    async function fetchHistoricalCuttings() {
+      try {
+        const response = await fetch(HISTORICAL_CUTTINGS_API_URL, {
+          signal: controller.signal,
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[InteractiveMap] Historical cuttings HTTP ${response.status}: ${response.statusText}`
+            );
+          }
+          return;
+        }
+
+        const data: HistoricalCuttingsResponse = await response.json();
+        if (isMounted) {
+          if (Array.isArray(data?.features)) {
+            setHistoricalCuttings(data.features);
+          } else {
+            setHistoricalCuttings([]);
+          }
+          if (typeof data?.year === 'number') {
+            setCuttingsYear(data.year);
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return; // Ignore intentional abort on unmount
+        }
+        if (import.meta.env.DEV) {
+          console.warn('[InteractiveMap] Failed to load historical OSM road cuttings:', err);
+        }
+        // Failure handled gracefully - does not break the main map
+      }
+    }
+
+    fetchHistoricalCuttings();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
+
+  // Calculate corridor segments fallback if enabled
   const activeSegments =
     segments && segments.length > 0
       ? segments
       : calculateCorridorSegmentRisks(null);
 
   const isSelectionActive = Boolean(selectionMode);
-  const hasCustomSelection = Boolean(origin || destination);
+  const hasActiveRoadRoute = Boolean(activeRoute && activeRoute.status === 'success');
+
+  const handleResetPerspective = () => {
+    if (onResetRouteSelection) {
+      onResetRouteSelection();
+    }
+    setFitTrigger(Date.now());
+  };
 
   return (
     <div
-      className={clsx('dh-interactive-map', {
-        'dh-interactive-map--picking': isSelectionActive,
-      }, className)}
+      className={clsx(
+        'dh-interactive-map',
+        {
+          'dh-interactive-map--picking': isSelectionActive,
+        },
+        className
+      )}
     >
       {/* Simulation Status Overlay Banner */}
       {isSimulated && scenarioPrecipitation !== null && (
@@ -298,7 +649,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div className="dh-interactive-map__picking-banner" role="status">
           <span className="dh-interactive-map__picking-text">
             <Crosshair size={13} aria-hidden="true" />
-            Click anywhere on the map to set{' '}
+            Click anywhere on the terrain to set{' '}
             <strong>{selectionMode === 'origin' ? 'START LOCATION' : 'DESTINATION'}</strong>
           </span>
           {onCancelSelectionMode && (
@@ -341,8 +692,51 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       )}
 
-      {/* Quick Map Controls Toolbar (Top-Right) */}
-      <div className="dh-interactive-map__toolbar" role="toolbar" aria-label="Map location controls">
+      {/* Interactive Map Intelligence Toolbar (Top-Right) */}
+      <div className="dh-interactive-map__toolbar" role="toolbar" aria-label="Map intelligence controls">
+        {/* Layer: Monitoring Stations */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': showStations,
+          })}
+          onClick={() => setShowStations(!showStations)}
+          title="Toggle Himalayan observation & telemetry stations"
+          aria-pressed={showStations}
+        >
+          <Radio size={11} aria-hidden="true" />
+          <span>Stations</span>
+        </button>
+
+        {/* Layer: Route Corridor Segments */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': showCorridorRoute || hasActiveRoadRoute,
+          })}
+          onClick={handleToggleRoute}
+          title="Toggle NH-7 pilot corridor segment risk analysis"
+          aria-pressed={showCorridorRoute}
+        >
+          <Route size={11} aria-hidden="true" />
+          <span>Corridor</span>
+        </button>
+
+        {/* Layer: Historical OSM Road-Cutting Features (2018) */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': showHistoricalCuttings,
+          })}
+          onClick={() => setShowHistoricalCuttings(!showHistoricalCuttings)}
+          title="Toggle Historical OSM Road-Cutting Features (2018)"
+          aria-pressed={showHistoricalCuttings}
+        >
+          <History size={11} aria-hidden="true" />
+          <span>Historical Cuttings</span>
+        </button>
+
+        {/* GPS Live Geolocation */}
         {onUseLiveLocation && (
           <button
             type="button"
@@ -356,6 +750,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </button>
         )}
 
+        {/* Route Pin Pickers */}
         {onStartMapSelection && (
           <>
             <button
@@ -370,7 +765,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   onStartMapSelection('origin');
                 }
               }}
-              title="Pick origin on map"
+              title="Pick origin directly on map"
             >
               <MapPin size={11} />
               <span>Start</span>
@@ -388,7 +783,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   onStartMapSelection('destination');
                 }
               }}
-              title="Pick destination on map"
+              title="Pick destination directly on map"
             >
               <Flag size={11} />
               <span>Dest</span>
@@ -396,30 +791,56 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
-        {hasCustomSelection && onResetRouteSelection && (
-          <button
-            type="button"
-            className="dh-interactive-map__tool-btn dh-interactive-map__tool-btn--reset"
-            onClick={onResetRouteSelection}
-            title="Reset to default pilot corridor"
-          >
-            <RotateCcw size={11} />
-            <span>Reset</span>
-          </button>
-        )}
+        {/* Wheel Zoom Toggle (Protects page scroll by default) */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': wheelZoomEnabled,
+          })}
+          onClick={() => setWheelZoomEnabled(!wheelZoomEnabled)}
+          title={
+            wheelZoomEnabled
+              ? 'Mouse wheel zooms map (Click to release wheel to page scroll)'
+              : 'Mouse wheel scrolls page (Click to enable map wheel zoom)'
+          }
+          aria-pressed={wheelZoomEnabled}
+        >
+          <MousePointer size={11} aria-hidden="true" />
+          <span>{wheelZoomEnabled ? 'Wheel: On' : 'Wheel: Off'}</span>
+        </button>
+
+        {/* Reset Himalayan Overview */}
+        <button
+          type="button"
+          className="dh-interactive-map__tool-btn dh-interactive-map__tool-btn--reset"
+          onClick={handleResetPerspective}
+          title="Reset Himalayan perspective & frame Garhwal sector"
+        >
+          <RotateCcw size={11} aria-hidden="true" />
+          <span>Reset</span>
+        </button>
       </div>
 
       {/* Floating Map Risk Legend */}
-      <RiskLegend isSimulated={isSimulated} />
+      <RiskLegend
+        isSimulated={isSimulated}
+        showHistoricalCuttings={showHistoricalCuttings}
+      />
 
       <MapContainer
-        center={CORRIDOR_CENTER}
+        center={HIMALAYAN_DEFAULT_CENTER}
         zoom={zoom}
-        scrollWheelZoom={true}
+        scrollWheelZoom={wheelZoomEnabled}
         zoomControl={true}
         attributionControl={true}
       >
-        <MapViewController origin={origin} destination={destination} activeRoute={activeRoute} />
+        <MapViewController
+          origin={origin}
+          destination={destination}
+          activeRoute={activeRoute}
+          showCorridorRoute={showCorridorRoute}
+          fitTrigger={fitTrigger}
+        />
         <MapClickHandler selectionMode={selectionMode} onMapClick={onMapClick} />
 
         {/* Basemap Tile Layer: MapTiler Topo-v4 with graceful OpenStreetMap fallback */}
@@ -451,10 +872,126 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           />
         )}
 
-        {/* ─── PHASE 2 REAL ROAD ROUTE POLYLINE ─────────────────────────── */}
+        {/* ─── 1. HIMALAYAN HAZARD OBSERVATION STATIONS (DEFAULT INTELLIGENCE LAYER) ─── */}
+        {showStations &&
+          HIMALAYAN_OBSERVATION_STATIONS.map((st) => (
+            <Marker
+              key={st.id}
+              position={[st.latitude, st.longitude]}
+              icon={getStationIcon(st.riskTier)}
+            >
+              <Tooltip direction="top" offset={[0, -12]}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>
+                  {st.name} (~{st.elevationM}m MSL) · {st.riskTier}
+                </span>
+              </Tooltip>
+              <Popup maxWidth={320} className="dh-segment-popup">
+                <div className="dh-popup-card dh-popup-card--station">
+                  <div className="dh-popup-card__header">
+                    <span className="dh-popup-card__title">{st.code}</span>
+                    <span
+                      className="dh-popup-card__badge"
+                      style={{
+                        color:
+                          st.riskTier === 'LOW'
+                            ? 'var(--risk-low)'
+                            : st.riskTier === 'MODERATE'
+                            ? 'var(--risk-moderate)'
+                            : 'var(--risk-high)',
+                        borderColor: 'currentColor',
+                        border: '1px solid currentColor',
+                      }}
+                    >
+                      {st.riskTier} EXPOSURE
+                    </span>
+                  </div>
+
+                  <div className="dh-popup-card__route-name">{st.name}</div>
+
+                  <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
+                    <div className="dh-popup-card__grid-item">
+                      <span className="dh-popup-card__meta-k">Elevation MSL</span>
+                      <span className="dh-popup-card__meta-v">~{st.elevationM} m</span>
+                    </div>
+                    <div className="dh-popup-card__grid-item">
+                      <span className="dh-popup-card__meta-k">District</span>
+                      <span className="dh-popup-card__meta-v">{st.district}</span>
+                    </div>
+                    <div className="dh-popup-card__grid-item" style={{ gridColumn: 'span 2' }}>
+                      <span className="dh-popup-card__meta-k">Drainage Basin</span>
+                      <span className="dh-popup-card__meta-v">{st.riverBasin}</span>
+                    </div>
+                  </div>
+
+                  <div className="dh-popup-card__factors" style={{ marginTop: '8px' }}>
+                    <span className="dh-popup-card__factors-title">Hazard Exposure Focus</span>
+                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                      {st.hazardNote}
+                    </p>
+                  </div>
+
+                  <div className="dh-popup-card__telemetry-scope" style={{ marginTop: '8px' }}>
+                    <span>Telemetry Stream: {st.sensors}</span>
+                  </div>
+
+                  {/* Contextual Route Actions */}
+                  {(onSetOrigin || onSetDestination) && (
+                    <div className="dh-popup-card__station-actions">
+                      {onSetOrigin && (
+                        <button
+                          type="button"
+                          className="dh-popup-card__action-btn"
+                          onClick={() =>
+                            onSetOrigin({
+                              id: st.id,
+                              name: st.name,
+                              latitude: st.latitude,
+                              longitude: st.longitude,
+                              state: 'Uttarakhand',
+                              district: st.district,
+                              category: 'ROUTE_NODE',
+                              source: 'curated',
+                              elevationM: st.elevationM,
+                            })
+                          }
+                        >
+                          <MapPin size={11} />
+                          <span>Set Start</span>
+                        </button>
+                      )}
+                      {onSetDestination && (
+                        <button
+                          type="button"
+                          className="dh-popup-card__action-btn"
+                          onClick={() =>
+                            onSetDestination({
+                              id: st.id,
+                              name: st.name,
+                              latitude: st.latitude,
+                              longitude: st.longitude,
+                              state: 'Uttarakhand',
+                              district: st.district,
+                              category: 'ROUTE_NODE',
+                              source: 'curated',
+                              elevationM: st.elevationM,
+                            })
+                          }
+                        >
+                          <Flag size={11} />
+                          <span>Set Destination</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+
+        {/* ─── 2. REAL ROAD ROUTE POLYLINE (OSRM Active Navigation) ─────────── */}
         {activeRoute && activeRoute.status === 'success' && activeRoute.geometry.length > 0 && (
           <>
-            {/* Background contrast casing for mountain terrain legibility */}
+            {/* Background contrast casing */}
             <Polyline
               positions={activeRoute.geometry}
               pathOptions={{
@@ -549,129 +1086,204 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
-        {/* ─── BASELINE PILOT CORRIDOR (Shown when no real custom route is loaded) ─── */}
-        {(!activeRoute || activeRoute.status !== 'success') &&
+        {/* ─── 3. CORRIDOR SEGMENT RISK ANALYSIS (Shown when corridor layer is requested) ─── */}
+        {showCorridorRoute &&
+          (!activeRoute || activeRoute.status !== 'success') &&
           activeSegments.map((segment) => {
-          const isSelected = selectedSegmentId === segment.id;
-          return (
-            <Polyline
-              key={segment.id}
-              positions={segment.coordinates}
-              pathOptions={{
-                color: segment.colorHex,
-                weight: isSelected ? 8 : 5,
-                opacity: isSelected ? 1.0 : 0.9,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-              eventHandlers={{
-                click: () => {
-                  onSelectSegment?.(segment);
-                },
-              }}
-            >
-              <Tooltip sticky direction="top">
-                <span style={{ fontFamily: 'monospace' }}>
-                  <strong>{segment.id}</strong>: {segment.name} | Risk {segment.riskScore.toFixed(1)}/100 ({segment.riskTier})
-                </span>
-              </Tooltip>
-              <Popup maxWidth={300} className="dh-segment-popup">
-                <div className="dh-popup-card dh-popup-card--segment">
-                  {/* Header: Segment ID & Risk Tier Badge */}
-                  <div className="dh-popup-card__header">
-                    <span className="dh-popup-card__title">{segment.id}</span>
-                    <span
-                      className="dh-popup-card__badge"
-                      style={{
-                        color: segment.colorHex,
-                        backgroundColor: `${segment.colorHex}22`,
-                        borderColor: segment.colorHex,
-                        border: `1px solid ${segment.colorHex}`,
-                      }}
-                    >
-                      {segment.riskTier}
-                    </span>
-                  </div>
-
-                  <div className="dh-popup-card__route-name">{segment.name}</div>
-
-                  {/* Primary Score */}
-                  <div className="dh-popup-card__risk-metric">
-                    <span className="dh-popup-card__risk-label">Terrain Corridor Risk</span>
-                    <span
-                      className="dh-popup-card__risk-value"
-                      style={{ color: segment.colorHex }}
-                    >
-                      {segment.riskScore.toFixed(1)} / 100
-                    </span>
-                  </div>
-
-                  {/* Grid Metrics */}
-                  <div className="dh-popup-card__grid">
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Distance</span>
-                      <span className="dh-popup-card__meta-v">~{segment.distanceKm.toFixed(1)} km</span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Terrain Gradient</span>
-                      <span className="dh-popup-card__meta-v">
-                        {segment.gradientDegrees.toFixed(1)}° ({segment.gradientPercent.toFixed(1)}%)
-                      </span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Elevation</span>
-                      <span className="dh-popup-card__meta-v">
-                        {segment.startElevationM}m → {segment.endElevationM}m
-                      </span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Primary Driver</span>
+            const isSelected = selectedSegmentId === segment.id;
+            return (
+              <Polyline
+                key={segment.id}
+                positions={segment.coordinates}
+                pathOptions={{
+                  color: segment.colorHex,
+                  weight: isSelected ? 8 : 5,
+                  opacity: isSelected ? 1.0 : 0.9,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+                eventHandlers={{
+                  click: () => {
+                    onSelectSegment?.(segment);
+                  },
+                }}
+              >
+                <Tooltip sticky direction="top">
+                  <span style={{ fontFamily: 'monospace' }}>
+                    <strong>{segment.id}</strong>: {segment.name} | Risk {segment.riskScore.toFixed(1)}/100 ({segment.riskTier})
+                  </span>
+                </Tooltip>
+                <Popup maxWidth={300} className="dh-segment-popup">
+                  <div className="dh-popup-card dh-popup-card--segment">
+                    <div className="dh-popup-card__header">
+                      <span className="dh-popup-card__title">{segment.id}</span>
                       <span
-                        className="dh-popup-card__meta-v dh-popup-card__meta-v--driver"
-                        title={segment.primaryDriver}
+                        className="dh-popup-card__badge"
+                        style={{
+                          color: segment.colorHex,
+                          backgroundColor: `${segment.colorHex}22`,
+                          borderColor: segment.colorHex,
+                          border: `1px solid ${segment.colorHex}`,
+                        }}
                       >
-                        {segment.primaryDriver}
+                        {segment.riskTier}
                       </span>
                     </div>
-                  </div>
 
-                  {/* Factor Contributions */}
-                  <div className="dh-popup-card__factors">
-                    <span className="dh-popup-card__factors-title">Factor Contributions</span>
-                    <div className="dh-popup-card__factors-list">
-                      {segment.factorContributions.map((fc) => (
-                        <div key={fc.id} className="dh-popup-card__factor-row">
-                          <span className="dh-popup-card__factor-name">{fc.name}</span>
-                          <span className="dh-popup-card__factor-score">
-                            {fc.contribution !== null ? `+${fc.contribution.toFixed(1)}` : '—'}
-                            <span className="dh-popup-card__factor-weight">({fc.weightPercent}%)</span>
-                          </span>
-                        </div>
-                      ))}
+                    <div className="dh-popup-card__route-name">{segment.name}</div>
+
+                    <div className="dh-popup-card__risk-metric">
+                      <span className="dh-popup-card__risk-label">Terrain Corridor Risk</span>
+                      <span
+                        className="dh-popup-card__risk-value"
+                        style={{ color: segment.colorHex }}
+                      >
+                        {segment.riskScore.toFixed(1)} / 100
+                      </span>
+                    </div>
+
+                    <div className="dh-popup-card__grid">
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Distance</span>
+                        <span className="dh-popup-card__meta-v">~{segment.distanceKm.toFixed(1)} km</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Terrain Gradient</span>
+                        <span className="dh-popup-card__meta-v">
+                          {segment.gradientDegrees.toFixed(1)}° ({segment.gradientPercent.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Elevation</span>
+                        <span className="dh-popup-card__meta-v">
+                          {segment.startElevationM}m → {segment.endElevationM}m
+                        </span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Primary Driver</span>
+                        <span
+                          className="dh-popup-card__meta-v dh-popup-card__meta-v--driver"
+                          title={segment.primaryDriver}
+                        >
+                          {segment.primaryDriver}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="dh-popup-card__factors">
+                      <span className="dh-popup-card__factors-title">Factor Contributions</span>
+                      <div className="dh-popup-card__factors-list">
+                        {segment.factorContributions.map((fc) => (
+                          <div key={fc.id} className="dh-popup-card__factor-row">
+                            <span className="dh-popup-card__factor-name">{fc.name}</span>
+                            <span className="dh-popup-card__factor-score">
+                              {fc.contribution !== null ? `+${fc.contribution.toFixed(1)}` : '—'}
+                              <span className="dh-popup-card__factor-weight">({fc.weightPercent}%)</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="dh-popup-card__telemetry-scope">
+                      <span>Data Quality: {segment.activeFactorsRatio} ({segment.dataQualityRating})</span>
+                    </div>
+
+                    <div className="dh-popup-card__disclaimer">
+                      {segment.disclaimer}
                     </div>
                   </div>
+                </Popup>
+              </Polyline>
+            );
+          })}
 
-                  {/* Telemetry Scope & Data Quality */}
-                  <div className="dh-popup-card__telemetry-scope">
-                    <span>Data Quality: {segment.activeFactorsRatio} ({segment.dataQualityRating})</span>
-                    <span className="dh-popup-card__scope-note">
-                      Shared corridor hydro-met telemetry · Segment DEM gradient
-                    </span>
+        {/* ─── 4. HISTORICAL OSM ROAD-CUTTING FEATURES (2018 Historical Snapshot) ─── */}
+        {showHistoricalCuttings &&
+          historicalCuttings.map((feature) => {
+            // Backend provides [longitude, latitude]; Leaflet requires [latitude, longitude]
+            const leafletCoords = feature.coordinates.map(
+              ([lng, lat]) => [lat, lng] as [number, number]
+            );
+
+            return (
+              <Polyline
+                key={`hist-cutting-${feature.id}`}
+                positions={leafletCoords}
+                pathOptions={{
+                  color: '#f59e0b',
+                  weight: 4,
+                  opacity: 0.85,
+                  dashArray: '8 6',
+                }}
+              >
+                <Tooltip sticky direction="top">
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    Historical Cutting: OSM Way #{feature.id} ({cuttingsYear})
+                  </span>
+                </Tooltip>
+                <Popup maxWidth={320} className="dh-segment-popup">
+                  <div className="dh-popup-card dh-popup-card--cutting">
+                    <div className="dh-popup-card__header">
+                      <span className="dh-popup-card__title">Historical Road Cutting</span>
+                      <span
+                        className="dh-popup-card__badge"
+                        style={{
+                          color: '#f59e0b',
+                          backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                          borderColor: '#f59e0b',
+                          border: '1px solid #f59e0b',
+                        }}
+                      >
+                        OSM {cuttingsYear}
+                      </span>
+                    </div>
+
+                    <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Year</span>
+                        <span className="dh-popup-card__meta-v">{cuttingsYear}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">OSM Way ID</span>
+                        <span className="dh-popup-card__meta-v">{feature.id}</span>
+                      </div>
+                      {feature.tags.highway && (
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Highway</span>
+                          <span className="dh-popup-card__meta-v">{feature.tags.highway}</span>
+                        </div>
+                      )}
+                      {feature.tags.surface && (
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Surface</span>
+                          <span className="dh-popup-card__meta-v">{feature.tags.surface}</span>
+                        </div>
+                      )}
+                      {feature.tags.lanes && (
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Lanes</span>
+                          <span className="dh-popup-card__meta-v">{feature.tags.lanes}</span>
+                        </div>
+                      )}
+                      {feature.tags.cutting && (
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Cutting</span>
+                          <span className="dh-popup-card__meta-v">{feature.tags.cutting}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="dh-popup-card__disclaimer" style={{ marginTop: '6px' }}>
+                      Historical OSM snapshot ({cuttingsYear}). Road excavation slope hazard baseline.
+                    </div>
                   </div>
+                </Popup>
+              </Polyline>
+            );
+          })}
 
-                  {/* Technical Disclaimer */}
-                  <div className="dh-popup-card__disclaimer">
-                    {segment.disclaimer}
-                  </div>
-                </div>
-              </Popup>
-            </Polyline>
-          );
-        })}
-
-        {/* ─── PHASE 1 CUSTOM LOCATION MARKERS ─────────────────────────── */}
-
-        {/* Custom Start Location Marker */}
+        {/* ─── 4. CUSTOM USER-SELECTED LOCATION PINS ───────────────────────── */}
         {origin && (
           <Marker position={[origin.latitude, origin.longitude]} icon={originBeaconIcon}>
             <Tooltip direction="top" offset={[0, -14]} permanent>
@@ -697,7 +1309,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Custom Destination Marker */}
         {destination && (
           <Marker position={[destination.latitude, destination.longitude]} icon={destBeaconIcon}>
             <Tooltip direction="top" offset={[0, -14]} permanent>
@@ -723,7 +1334,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Live GPS Location Marker & Accuracy Halo */}
+        {/* Live GPS Location & Accuracy Radius */}
         {liveLocation && (
           <>
             <Marker position={[liveLocation.latitude, liveLocation.longitude]} icon={liveLocationBeaconIcon}>
@@ -742,7 +1353,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     {formatCoordinates(liveLocation.latitude, liveLocation.longitude)}
                   </span>
                   <p className="dh-popup-card__desc">
-                    Position estimated via browser Geolocation API. Estimated accuracy radius: ±{liveLocation.accuracyMeters} meters.
+                    Position acquired via browser Geolocation API. Estimated accuracy: ±{liveLocation.accuracyMeters} meters.
                   </p>
                 </div>
               </Popup>
@@ -792,43 +1403,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Popup>
           </Marker>
         )}
-
-        {/* ─── BASELINE PILOT CORRIDOR NODES (Rishikesh & Joshimath) ─────── */}
-        <Marker position={RISHIKESH_COORDS} icon={startBeaconIcon}>
-          <Tooltip direction="top" offset={[0, -12]}>
-            Rishikesh — Pilot Corridor Start (~340 m MSL)
-          </Tooltip>
-          <Popup>
-            <div className="dh-popup-card">
-              <div className="dh-popup-card__header">
-                <h3 className="dh-popup-card__title">Rishikesh</h3>
-                <span className="dh-popup-card__badge dh-popup-card__badge--start">PILOT START</span>
-              </div>
-              <span className="dh-popup-card__meta">30.0869° N, 78.2676° E | ~340 m MSL</span>
-              <p className="dh-popup-card__desc">
-                Pilot Corridor Start node. Transit origin at the Garhwal Himalayan foothills along NH-7.
-              </p>
-            </div>
-          </Popup>
-        </Marker>
-
-        <Marker position={JOSHIMATH_COORDS} icon={endBeaconIcon}>
-          <Tooltip direction="top" offset={[0, -12]}>
-            Joshimath — Pilot Corridor End (~1,890 m MSL)
-          </Tooltip>
-          <Popup>
-            <div className="dh-popup-card">
-              <div className="dh-popup-card__header">
-                <h3 className="dh-popup-card__title">Joshimath</h3>
-                <span className="dh-popup-card__badge dh-popup-card__badge--end">PILOT END</span>
-              </div>
-              <span className="dh-popup-card__meta">30.5564° N, 79.5663° E | ~1,890 m MSL</span>
-              <p className="dh-popup-card__desc">
-                Pilot Corridor End node. Strategic terminus situated in the high-relief Alaknanda gorge.
-              </p>
-            </div>
-          </Popup>
-        </Marker>
       </MapContainer>
     </div>
   );

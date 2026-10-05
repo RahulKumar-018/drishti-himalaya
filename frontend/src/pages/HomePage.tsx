@@ -1,7 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
 import {
-  Mountain,
   Compass,
   Activity,
   ShieldCheck,
@@ -10,17 +9,30 @@ import {
   Layers,
   CloudRain,
   ChevronRight,
+  Mountain,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
+import { MapViewport } from '../components/workspace/MapViewport';
+import { AlertCard } from '../components/alerts/AlertCard';
+import { DEMO_ALERTS } from '../components/alerts/AlertFeed';
 import { RiskAssessment } from '../services/risk/types';
 import { EnvironmentalData } from '../services/environmental/types';
+import { CorridorSegmentRisk } from '../services/risk/segmentRiskService';
+import { UseLocationSelectionReturn } from '../hooks/useLocationSelection';
 import './HomePage.css';
 
 export interface HomePageProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, context?: unknown) => void;
   riskAssessment?: RiskAssessment | null;
   envData?: EnvironmentalData | null;
+  segments?: CorridorSegmentRisk[];
+  selectedSegmentId?: string | null;
+  onSelectSegment?: (segment: CorridorSegmentRisk | null) => void;
+  scenarioPrecipitation?: number | null;
+  onScenarioChange?: (val: number | null) => void;
+  scenarioRiskAssessment?: RiskAssessment | null;
+  locationSelection?: UseLocationSelectionReturn;
   className?: string;
 }
 
@@ -28,11 +40,28 @@ export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
   riskAssessment,
   envData,
+  segments,
+  selectedSegmentId,
+  onSelectSegment,
+  scenarioPrecipitation,
+  onScenarioChange,
+  scenarioRiskAssessment,
+  locationSelection,
   className,
 }) => {
   const currentRiskScore = riskAssessment?.score ?? 24.8;
   const currentRiskLevel = riskAssessment?.level ?? 'LOW';
   const livePrecip = envData?.rainfall?.precipitation ?? 0.0;
+  const isSimulated = Boolean(scenarioPrecipitation !== null && scenarioPrecipitation !== undefined);
+
+  const handleScrollToMap = () => {
+    const mapEl = document.getElementById('map-workspace');
+    if (mapEl) {
+      mapEl.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      onNavigate('map');
+    }
+  };
 
   return (
     <div className={clsx('dh-home-page', className)}>
@@ -45,7 +74,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="dh-home-hero__badge-row">
             <span className="dh-home-hero__live-pill">
               <span className="dh-home-hero__live-dot" />
-              PILOT SECTOR: GARHWAL HIMALAYAS (NH-7)
+              PILOT SECTOR: GARHWAL HIMALAYAS
             </span>
             <span className="dh-home-hero__model-pill">
               COPERNICUS DEM 90m · OPEN-METEO TELEMETRY
@@ -61,11 +90,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
 
           <p className="dh-home-hero__problem">
-            Monitors geotechnical hazard conditions and hydro-meteorological shocks along Himalayan pilgrimage arteries. Drishti Himalaya disaggregates mountain highways into 250m uniform segments, evaluating real-time multi-factor risk exposure to support safer route decisions for pilgrims, logistics operators, and civil disaster response teams.
+            Continuous geotechnical hazard monitoring and hydro-meteorological decision support along Himalayan pilgrimage arteries. Drishti Himalaya disaggregates mountain highways into uniform 250m segments, evaluating multi-factor risk exposure to support safer route decisions for pilgrims, logistics operators, and civil disaster response teams.
           </p>
 
           <div className="dh-home-hero__disclaimer-badge">
-            Operational Decision Support System · Continuous Deterministic Risk Monitoring · Future ML Susceptibility Inference Planned
+            Operational Decision Support System · Continuous Deterministic Risk Monitoring · Open-Meteo &amp; Copernicus DEM Integration
           </div>
 
           {/* Action CTAs */}
@@ -83,10 +112,10 @@ export const HomePage: React.FC<HomePageProps> = ({
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => onNavigate('map')}
+              onClick={handleScrollToMap}
               leadingIcon={<Compass size={16} />}
             >
-              Interactive Corridor Map
+              Explore Hazard Map
             </Button>
 
             <Button
@@ -102,15 +131,15 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Live Corridor Quick Stats Strip */}
           <div className="dh-home-hero__stats-strip">
             <div className="dh-home-hero__stat-item">
-              <span className="dh-home-hero__stat-label">PILOT CORRIDOR</span>
-              <span className="dh-home-hero__stat-val">Rishikesh → Joshimath</span>
-              <span className="dh-home-hero__stat-sub">NH-7 · 246 km Mountain Road</span>
+              <span className="dh-home-hero__stat-label">PILOT SECTOR</span>
+              <span className="dh-home-hero__stat-val">Garhwal Himalayas</span>
+              <span className="dh-home-hero__stat-sub">NH-7 / Char Dham Highway Network</span>
             </div>
 
             <div className="dh-home-hero__stat-divider" aria-hidden="true" />
 
             <div className="dh-home-hero__stat-item">
-              <span className="dh-home-hero__stat-label">CORRIDOR HAZARD LEVEL</span>
+              <span className="dh-home-hero__stat-label">COMPOSITE HAZARD LEVEL</span>
               <div className="dh-home-hero__stat-risk">
                 <span
                   className="dh-home-hero__stat-score"
@@ -151,7 +180,34 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* ─── 2. HIMALAYAN RISK CONTEXT SECTION ───────────────────────────── */}
+      {/* ─── 2. HIMALAYAN HAZARD INTELLIGENCE MAP SECTION ───────────────── */}
+      <section className="dh-home-map-section" id="map-workspace">
+        <div className="dh-home-section__header">
+          <span className="dh-home-section__eyebrow">GEOSPATIAL INTELLIGENCE WORKSPACE</span>
+          <h2 className="dh-home-section__title">
+            Garhwal Himalayan Hazard Monitoring Grid
+          </h2>
+          <p className="dh-home-section__desc">
+            Explore terrain topography, real-time hydro-meteorological telemetry, and active monitoring stations across Uttarakhand's pilgrimage corridors.
+          </p>
+        </div>
+
+        <div className="dh-home-map-container">
+          <MapViewport
+            envData={envData}
+            riskAssessment={isSimulated ? scenarioRiskAssessment ?? riskAssessment : riskAssessment}
+            segments={segments}
+            selectedSegmentId={selectedSegmentId}
+            onSelectSegment={(seg) => onSelectSegment?.(seg)}
+            isSimulated={isSimulated}
+            scenarioPrecipitation={scenarioPrecipitation}
+            onResetScenario={() => onScenarioChange?.(null)}
+            locationSelection={locationSelection}
+          />
+        </div>
+      </section>
+
+      {/* ─── 3. HIMALAYAN RISK CONTEXT SECTION ───────────────────────────── */}
       <section className="dh-home-context">
         <div className="dh-home-section__header">
           <span className="dh-home-section__eyebrow">HIMALAYAN GEOTECHNICAL CONTEXT</span>
@@ -250,7 +306,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* ─── 3. CORE SOLUTION PILLARS ────────────────────────────────────── */}
+      {/* ─── 4. CORE SOLUTION PILLARS ────────────────────────────────────── */}
       <section className="dh-home-pillars">
         <div className="dh-home-section__header">
           <span className="dh-home-section__eyebrow">SYSTEM ARCHITECTURE</span>
@@ -345,7 +401,43 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* ─── 4. BOTTOM CALL TO ACTION BANNER ─────────────────────────────── */}
+      {/* ─── 5. ACTIVE EARLY WARNING ADVISORIES PREVIEW ──────────────────── */}
+      <section className="dh-home-alerts-preview">
+        <div className="dh-home-section__header">
+          <span className="dh-home-section__eyebrow">FIELD EARLY WARNINGS</span>
+          <h2 className="dh-home-section__title">
+            Active Civil Protection &amp; Hazard Bulletins
+          </h2>
+          <p className="dh-home-section__desc">
+            Continuous operational advisories generated from monitored slope sensors and rainfall surge criteria.
+          </p>
+        </div>
+
+        <div className="dh-home-alerts-container">
+          <div className="dh-home-alerts-grid">
+            {DEMO_ALERTS.slice(0, 2).map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                onLocateOnMap={(a) => onNavigate('map', { targetAlert: a })}
+              />
+            ))}
+          </div>
+
+          <div className="dh-home-alerts-cta-row">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => onNavigate('alerts')}
+              trailingIcon={<ArrowRight size={14} />}
+            >
+              View All 5 Active Bulletins
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 6. BOTTOM CALL TO ACTION BANNER ─────────────────────────────── */}
       <section className="dh-home-cta">
         <div className="dh-home-cta__container">
           <div className="dh-home-cta__text-group">

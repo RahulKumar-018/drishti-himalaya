@@ -1,18 +1,20 @@
 /* ==============================================================================
    DRISHTI-HIMALAYA - MAIN WORKSPACE LAYOUT
-   Two-column command center structure: Interactive Map (70%) + Analysis Panel (30%)
+   Two-column command center structure: Interactive Map (68%) + Analysis Panel (32%)
+   Contained, responsive workspace that preserves natural page scrolling
    ============================================================================== */
 
 .dh-workspace {
-  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr);
+  grid-template-columns: minmax(0, 68fr) minmax(340px, 32fr);
   gap: var(--space-4);
   padding: var(--space-4);
   box-sizing: border-box;
-  width: 100%;
-  min-height: 0;
-  height: calc(100vh - 96px);
+  height: clamp(560px, 72vh, 820px);
+  min-height: 520px;
   align-items: stretch;
 }
 
@@ -39,27 +41,36 @@
   box-sizing: border-box;
 }
 
-/* Tablet & Mobile: Stack Vertically */
-@media (max-width: 900px) {
+/* Tablet: Stack Vertically with Contained Map Height */
+@media (max-width: 960px) {
   .dh-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
     height: auto;
     min-height: 0;
     gap: var(--space-4);
     padding: var(--space-4);
   }
 
-  .dh-workspace__map-region,
+  .dh-workspace__map-region {
+    height: clamp(420px, 55vh, 600px);
+    min-height: 380px;
+  }
+
   .dh-workspace__panel-region {
     height: auto;
+    min-height: 480px;
   }
 }
 
-
+/* Mobile */
 @media (max-width: 480px) {
   .dh-workspace {
-    padding: var(--space-3);
+    padding: var(--space-2);
     gap: var(--space-3);
+  }
+
+  .dh-workspace__map-region {
+    height: clamp(340px, 50vh, 460px);
+    min-height: 300px;
   }
 }

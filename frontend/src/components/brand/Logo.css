@@ -1,0 +1,116 @@
+/* ==============================================================================
+   DRISHTI-HIMALAYA - BRAND LOGO SYSTEM
+   Styles for full, compact, and icon-only brand identity marks
+   ============================================================================== */
+
+.dh-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  -webkit-user-select: none;
+  user-select: none;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity var(--transition-fast);
+}
+
+.dh-logo:hover {
+  opacity: 0.95;
+}
+
+.dh-logo__mark-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  filter: drop-shadow(0 2px 8px rgba(100, 183, 216, 0.2));
+  transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.dh-logo:hover .dh-logo__mark-wrap {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 4px 12px rgba(100, 183, 216, 0.35));
+}
+
+.dh-logo-mark {
+  display: block;
+}
+
+/* Wordmark & Typography */
+.dh-logo__text-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.dh-logo__wordmark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.dh-logo__brand-first {
+  color: var(--text-primary);
+}
+
+.dh-logo__brand-second {
+  color: var(--accent-primary);
+}
+
+.dh-logo__tagline {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.dh-logo__wordmark-compact {
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  white-space: nowrap;
+}
+
+/* Size Variants */
+.dh-logo--sm .dh-logo__wordmark {
+  font-size: var(--text-xs);
+  gap: 4px;
+}
+
+.dh-logo--sm .dh-logo__tagline {
+  font-size: 8px;
+}
+
+.dh-logo--md .dh-logo__wordmark {
+  font-size: var(--text-sm);
+}
+
+.dh-logo--lg .dh-logo__wordmark {
+  font-size: var(--text-md);
+  gap: 8px;
+}
+
+.dh-logo--lg .dh-logo__tagline {
+  font-size: 10px;
+}
+
+.dh-logo--xl .dh-logo__wordmark {
+  font-size: var(--text-xl);
+  gap: 10px;
+}
+
+.dh-logo--xl .dh-logo__tagline {
+  font-size: 11px;
+}

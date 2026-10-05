@@ -12,6 +12,8 @@
   position: relative;
   background-color: var(--bg-app);
   box-sizing: border-box;
+  isolation: isolate;
+  contain: paint;
 }
 
 .dh-interactive-map .leaflet-container {
@@ -212,6 +214,22 @@
   border: 1.5px solid #ffffff;
 }
 
+/* Observation Station Beacon */
+.dh-map-beacon--station .dh-map-beacon__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid #ffffff;
+}
+
+.dh-map-beacon--station .dh-map-beacon__pulse {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  animation: dh-beacon-pulse 2.2s infinite ease-out;
+}
+
 @keyframes dh-beacon-pulse {
   0% {
     transform: scale(0.6);
@@ -297,6 +315,13 @@
   max-width: 290px;
   gap: var(--space-2);
 }
+
+.dh-popup-card--cutting {
+  min-width: 220px;
+  max-width: 280px;
+  gap: var(--space-2);
+}
+
 
 .dh-popup-card__route-name {
   font-family: var(--font-sans);
@@ -441,6 +466,39 @@
   font-style: italic;
 }
 
+/* Station Popup Actions */
+.dh-popup-card__station-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dh-popup-card__action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dh-popup-card__action-btn:hover {
+  background-color: var(--accent-primary);
+  color: #0b1420;
+}
+
 /* ==============================================================================
    MAP FLOATING SIMULATION BANNER
    ============================================================================== */
@@ -450,7 +508,7 @@
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 850;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--accent-border);
@@ -514,7 +572,7 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 1000;
+  z-index: 850;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -563,13 +621,31 @@
   color: #fde047;
 }
 
+@media (max-width: 640px) {
+  .dh-interactive-map__toolbar {
+    top: 8px;
+    right: 8px;
+    gap: 2px;
+    padding: 2px;
+    max-width: calc(100% - 16px);
+  }
+
+  .dh-interactive-map__tool-btn {
+    padding: 5px 6px;
+  }
+
+  .dh-interactive-map__tool-btn span {
+    display: none;
+  }
+}
+
 /* Floating Selection Banner */
 .dh-interactive-map__picking-banner {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 850;
   background-color: rgba(14, 22, 38, 0.95);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -683,7 +759,7 @@
   top: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 850;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -708,7 +784,7 @@
   top: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 850;
   display: flex;
   align-items: center;
   gap: var(--space-3);

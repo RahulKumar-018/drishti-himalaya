@@ -42,6 +42,10 @@
   max-width: 1280px;
 }
 
+.dh-container--2xl {
+  max-width: 1400px;
+}
+
 .dh-container--full {
   max-width: 100%;
 }

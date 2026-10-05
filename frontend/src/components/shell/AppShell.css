@@ -9,7 +9,7 @@
   min-height: 100vh;
   background-color: var(--bg-app);
   color: var(--text-primary);
-  overflow-x: hidden;
+  overflow-x: clip;
   box-sizing: border-box;
 }
 

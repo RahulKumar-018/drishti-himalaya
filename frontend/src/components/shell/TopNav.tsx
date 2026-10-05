@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import {
-  Mountain,
   Menu,
   X,
   Compass,
@@ -13,6 +12,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
+import { Logo } from '../brand';
 import { RiskAssessment } from '../../services/risk/types';
 import './TopNav.css';
 
@@ -43,11 +43,11 @@ export interface TopNavProps {
   className?: string;
 }
 
-export const NAV_ITEMS: readonly NavItemConfig[] = [
-  { key: 'home', label: 'Home', icon: <Home size={14} />, isAvailable: true },
+const NAV_ITEMS: readonly NavItemConfig[] = [
+  { key: 'home', label: 'Overview', icon: <Home size={14} />, isAvailable: true },
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, isAvailable: true },
-  { key: 'map', label: 'Corridor Map', icon: <Compass size={14} />, isAvailable: true },
-  { key: 'risk-analysis', label: 'Risk Analysis', icon: <Activity size={14} />, isAvailable: true },
+  { key: 'map', label: 'Risk Map', icon: <Compass size={14} />, isAvailable: true },
+  { key: 'risk-analysis', label: 'Analysis', icon: <Activity size={14} />, isAvailable: true },
   { key: 'alerts', label: 'Alerts', icon: <BellRing size={14} />, isAvailable: true },
   { key: 'about', label: 'About', icon: <Info size={14} />, isAvailable: true },
 ] as const;
@@ -90,7 +90,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   if (systemStatusText !== undefined) {
     displayStatusText = systemStatusText;
   } else if (isLoadingRisk && (!riskAssessment || riskAssessment.score === null)) {
-    displayStatusText = 'RISK: CALCULATING';
+    displayStatusText = 'LIVE SYSTEM · CALCULATING';
     statusDotColor = '#eab308';
   } else if (
     isRiskError ||
@@ -98,10 +98,10 @@ export const TopNav: React.FC<TopNavProps> = ({
     riskAssessment.score === null ||
     riskAssessment.level === 'INDETERMINATE'
   ) {
-    displayStatusText = 'RISK: UNAVAILABLE';
+    displayStatusText = 'LIVE SYSTEM · TELEMETRY STANDBY';
     statusDotColor = '#64748b';
   } else {
-    displayStatusText = `RISK: ${riskAssessment.level} · ${riskAssessment.score.toFixed(1)}`;
+    displayStatusText = `LIVE SYSTEM · ${riskAssessment.level} RISK (${riskAssessment.score.toFixed(1)}/100)`;
     statusDotColor = riskAssessment.colorHex;
   }
 
@@ -115,21 +115,23 @@ export const TopNav: React.FC<TopNavProps> = ({
   return (
     <header className={clsx('dh-topnav', className)}>
       <div className="dh-topnav__container">
-        {/* Left: Product Identity Lockup */}
+        {/* Left: Product Identity with Logo System */}
         <div
           className="dh-topnav__brand"
           onClick={() => handleItemClick('home')}
           role="button"
           tabIndex={0}
-          title="Return to Drishti Himalaya Home"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleItemClick('home');
+            }
+          }}
+          title="Drishti Himalaya — Road Hazard Decision Support System"
+          aria-label="Drishti Himalaya Home"
         >
-          <div className="dh-topnav__mark" aria-hidden="true">
-            <Mountain size={18} className="dh-topnav__mark-icon" />
-          </div>
-          <div className="dh-topnav__identity">
-            <h1 className="dh-topnav__title">DRISHTI-HIMALAYA</h1>
-            <span className="dh-topnav__subtitle">ROAD HAZARD DECISION SUPPORT</span>
-          </div>
+          <Logo variant="full" size="md" showSubtitle={true} className="dh-topnav__logo-full" />
+          <Logo variant="compact" size="sm" showSubtitle={false} className="dh-topnav__logo-compact" />
         </div>
 
         {/* Center: Desktop Navigation Bar */}
@@ -162,7 +164,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Right: Technical System State Indicator & Mobile Toggle */}
         <div className="dh-topnav__right-group">
-          {/* Network / Telemetry Status (Honest Offline Caveat) */}
+          {/* Network / Telemetry Status */}
           <div
             className={clsx('dh-topnav__net-status', {
               'dh-topnav__net-status--online': isOnline,
@@ -170,8 +172,8 @@ export const TopNav: React.FC<TopNavProps> = ({
             })}
             title={
               isOnline
-                ? 'Network active · Live Open-Meteo & Copernicus DEM telemetry available'
-                : 'Connection unavailable · Offline tile caching planned for PWA release'
+                ? 'Network active · Live Open-Meteo & Copernicus DEM telemetry online'
+                : 'Connection offline · Displaying cached baselines'
             }
             role="status"
             aria-label={isOnline ? 'Telemetry online' : 'Connection unavailable'}
@@ -193,7 +195,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             <div
               className="dh-topnav__status-indicator"
               role="status"
-              aria-label={`Hazard risk status: ${displayStatusText}`}
+              aria-label={`System status: ${displayStatusText}`}
             >
               <span
                 className="dh-topnav__status-dot"

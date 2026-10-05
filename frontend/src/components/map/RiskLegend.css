@@ -7,7 +7,7 @@
   position: absolute;
   bottom: 24px;
   left: 16px;
-  z-index: 1000;
+  z-index: 850;
   background-color: rgba(14, 22, 38, 0.92);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -101,3 +101,29 @@
   text-transform: uppercase;
   text-align: center;
 }
+
+/* Historical OSM Road Cutting (2018) Legend Entry */
+.dh-risk-legend__item--cutting {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dh-risk-legend__swatch--cutting {
+  background: repeating-linear-gradient(
+    90deg,
+    #f59e0b,
+    #f59e0b 4px,
+    transparent 4px,
+    transparent 7px
+  );
+  height: 4px;
+  border-radius: 1px;
+}
+
+.dh-risk-legend__label--cutting {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+

@@ -92,13 +92,14 @@
 
 .dh-home-hero__title {
   font-family: var(--font-sans);
-  font-size: clamp(2rem, 5vw, 3.8rem);
+  font-size: clamp(1.65rem, 6.5vw, 3.8rem);
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
   color: var(--text-primary);
   margin: 0 0 var(--space-2) 0;
   text-transform: uppercase;
+  word-break: break-word;
 }
 
 .dh-home-hero__title-accent {
@@ -110,7 +111,7 @@
 
 .dh-home-hero__tagline {
   font-family: var(--font-sans);
-  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
   font-weight: 500;
   color: var(--text-secondary);
   margin: 0 0 var(--space-4) 0;
@@ -133,10 +134,12 @@
   background: rgba(16, 30, 43, 0.85);
   border: 1px solid var(--border-default);
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   margin-bottom: var(--space-8);
   letter-spacing: 0.03em;
   max-width: 800px;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .dh-home-hero__actions {
@@ -274,7 +277,74 @@
   margin: 0;
 }
 
-/* ─── 2. HIMALAYAN RISK CONTEXT ───────────────────────────────────────────── */
+/* ─── 2. HIMALAYAN HAZARD INTELLIGENCE MAP WORKSPACE ────────────────────── */
+
+.dh-home-map-section {
+  padding: var(--space-10, 2.5rem) var(--space-6);
+  background-color: var(--bg-app);
+  border-bottom: 1px solid var(--border-default);
+  box-sizing: border-box;
+  scroll-margin-top: 64px;
+}
+
+.dh-home-map-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  height: clamp(520px, 68vh, 760px);
+  min-height: 480px;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 768px) {
+  .dh-home-map-section {
+    padding: var(--space-6) var(--space-3);
+  }
+
+  .dh-home-map-container {
+    height: clamp(380px, 55vh, 520px);
+    min-height: 360px;
+  }
+}
+
+/* ─── 5. EARLY WARNING ADVISORIES PREVIEW ───────────────────────────────── */
+
+.dh-home-alerts-preview {
+  padding: var(--space-10, 2.5rem) var(--space-6);
+  background-color: var(--bg-surface-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+}
+
+.dh-home-alerts-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.dh-home-alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 840px) {
+  .dh-home-alerts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dh-home-alerts-cta-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ─── 3. HIMALAYAN RISK CONTEXT ───────────────────────────────────────────── */
 
 .dh-home-context {
   padding: var(--space-12, 3rem) var(--space-6);
@@ -367,6 +437,7 @@
   justify-content: center;
   z-index: 2;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 

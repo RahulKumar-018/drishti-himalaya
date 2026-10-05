@@ -104,6 +104,13 @@ export default function App(): React.JSX.Element {
           onNavigate={handleNavigate}
           riskAssessment={liveRiskAssessment}
           envData={envData}
+          segments={segments}
+          selectedSegmentId={selectedSegment?.id ?? null}
+          onSelectSegment={setSelectedSegment}
+          scenarioPrecipitation={scenarioPrecipitation}
+          onScenarioChange={setScenarioPrecipitation}
+          scenarioRiskAssessment={scenarioRiskAssessment}
+          locationSelection={locationSelection}
         />
       )}
 

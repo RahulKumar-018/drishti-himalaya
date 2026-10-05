@@ -1,0 +1,25 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dh-crest-glacier" x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8ee0f7" />
+      <stop offset="50%" stop-color="#4ea4c7" />
+      <stop offset="100%" stop-color="#1e4e6d" />
+    </linearGradient>
+    <linearGradient id="dh-crest-shadow" x1="24" y1="12" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#152738" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#08101a" stop-opacity="0.95" />
+    </linearGradient>
+    <radialGradient id="dh-eye-glow" cx="24" cy="22" r="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8ee0f7" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#4ea4c7" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#4ea4c7" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <path d="M24 3L42 12V26C42 35 34 42 24 45C14 42 6 35 6 26V12L24 3Z" fill="url(#dh-crest-shadow)" stroke="url(#dh-crest-glacier)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M24 10L35 28H13L24 10Z" fill="#132433" stroke="#2e526d" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M24 10L13 28H24V10Z" fill="#0c1722" opacity="0.85"/>
+  <path d="M10 26C15 19 33 19 38 26" stroke="url(#dh-crest-glacier)" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M11 26C16 32 32 32 37 26" stroke="#4ea4c7" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="24" cy="25.5" r="5" fill="url(#dh-eye-glow)"/>
+  <circle cx="24" cy="25.5" r="3" fill="#ffffff" stroke="#8ee0f7" stroke-width="1.5"/>
+</svg>

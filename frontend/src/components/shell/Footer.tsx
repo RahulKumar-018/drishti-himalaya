@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
-import { Mountain, Shield, Radio, Phone } from 'lucide-react';
+import { Shield, Radio, Phone } from 'lucide-react';
+import { Logo } from '../brand';
 import './Footer.css';
 
 export interface FooterProps {
@@ -15,13 +16,7 @@ export const Footer: React.FC<FooterProps> = ({ className, onNavigate }) => {
         {/* Brand & Purpose Column */}
         <div className="dh-footer__col dh-footer__col--brand">
           <div className="dh-footer__brand-lockup">
-            <div className="dh-footer__logo">
-              <Mountain size={18} />
-            </div>
-            <div>
-              <span className="dh-footer__brand-name">DRISHTI HIMALAYA</span>
-              <span className="dh-footer__tagline">ROAD HAZARD DECISION SUPPORT SYSTEM</span>
-            </div>
+            <Logo variant="full" size="lg" showSubtitle={true} />
           </div>
           <p className="dh-footer__desc">
             Geospatial early warning intelligence for Himalayan highway corridors.

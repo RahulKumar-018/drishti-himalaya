@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import clsx from 'clsx';
 import './Container.css';
 
-export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 
 export interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: ContainerSize;

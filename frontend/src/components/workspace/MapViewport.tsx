@@ -103,7 +103,11 @@ export const MapViewport: React.FC<MapViewportProps> = ({
           </div>
           <Divider orientation="vertical" variant="subtle" />
           <span className="dh-map-viewport__corridor-code">
-            {locationSelection?.activeRoute ? 'ROAD ROUTE (OSRM)' : hasCustomRoute ? 'CUSTOM ROUTE' : 'NH-7 CORRIDOR'}
+            {locationSelection?.activeRoute
+              ? 'ROAD ROUTE (OSRM)'
+              : hasCustomRoute
+              ? 'CUSTOM ROUTE'
+              : 'GARHWAL HIMALAYAS'}
           </span>
         </div>
 
@@ -119,11 +123,9 @@ export const MapViewport: React.FC<MapViewportProps> = ({
               </span>
             </>
           ) : (
-            <>
-              <span className="dh-map-viewport__waypoint">RISHIKESH</span>
-              <ArrowRight size={11} className="dh-map-viewport__waypoint-arrow" aria-hidden="true" />
-              <span className="dh-map-viewport__waypoint">JOSHIMATH</span>
-            </>
+            <span className="dh-map-viewport__waypoint">
+              HAZARD INTELLIGENCE GRID · UTTARAKHAND
+            </span>
           )}
         </div>
       </div>
@@ -149,6 +151,8 @@ export const MapViewport: React.FC<MapViewportProps> = ({
           onStartMapSelection={locationSelection?.startMapSelection}
           onUseLiveLocation={locationSelection?.useLiveLocationAsOrigin}
           onResetRouteSelection={locationSelection?.resetSelection}
+          onSetOrigin={locationSelection?.setOrigin}
+          onSetDestination={locationSelection?.setDestination}
           isLocating={locationSelection?.isLocating}
           activeRoute={locationSelection?.activeRoute}
           isRouting={locationSelection?.isRouting}

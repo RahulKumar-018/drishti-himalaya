@@ -6,11 +6,13 @@ import './RiskLegend.css';
 export interface RiskLegendProps {
   className?: string;
   isSimulated?: boolean;
+  showHistoricalCuttings?: boolean;
 }
 
 export const RiskLegend: React.FC<RiskLegendProps> = ({
   className,
   isSimulated = false,
+  showHistoricalCuttings = true,
 }) => {
   const tiers = [
     { key: 'LOW', label: 'LOW', range: '< 25', config: RISK_TIER_CONFIG.LOW },
@@ -43,6 +45,17 @@ export const RiskLegend: React.FC<RiskLegendProps> = ({
             <span className="dh-risk-legend__range">{t.range}</span>
           </li>
         ))}
+        {showHistoricalCuttings && (
+          <li className="dh-risk-legend__item dh-risk-legend__item--cutting">
+            <span
+              className="dh-risk-legend__swatch dh-risk-legend__swatch--cutting"
+              aria-hidden="true"
+            />
+            <span className="dh-risk-legend__label dh-risk-legend__label--cutting">
+              Historical OSM Cutting — 2018
+            </span>
+          </li>
+        )}
       </ul>
 
       <div className="dh-risk-legend__footer">
