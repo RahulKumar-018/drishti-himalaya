@@ -96,3 +96,16 @@ data/raw/osm/
 # Local SQLite database
 *.db
 *.sqlite
+
+# Raw OSM extracts
+*.pbf
+
+# Large reference documents
+docs/reference/
+*.pdf
+
+# Local OSM investigation/scratch JSON
+/*_cuttings.json
+/osm_*.json
+/all_northern_cuttings.json
+/uttarakhand_cutting_*.json
