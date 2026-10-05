@@ -102,3 +102,63 @@ export interface BackendHealthResponse {
     osrm_router_online: boolean;
   };
 }
+
+export interface RiskPredictApiRequest {
+  latitude: number;
+  longitude: number;
+  timestamp?: string;
+  rainfall_mm?: number;
+  slope_deg?: number;
+  weather_source?: string;
+  model_type?: 'heuristic' | 'ml';
+}
+
+export interface RiskPredictApiResponse {
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  risk_score: number;
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  factors: {
+    rainfall: number;
+    slope: number;
+    terrain: number;
+    historical: number;
+    details?: Record<string, any>;
+  };
+  explanation: string;
+  contributing_factors: string[];
+  weather_source: string;
+  model_type: string;
+  model_version: string;
+  data_quality: 'HIGH' | 'MEDIUM' | 'LOW';
+  data_caveats?: string[];
+  generated_at: string;
+}
+
+export interface RiskZonesApiResponse {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    id: string;
+    geometry: {
+      type: 'Polygon';
+      coordinates: number[][][];
+    };
+    properties: {
+      zone_id: string;
+      zone_name: string;
+      risk_score: number;
+      risk_level: string;
+      color_hex: string;
+      factors: Record<string, number>;
+      model_version: string;
+      generated_at: string;
+      disclaimer: string;
+    };
+  }>;
+  total_zones: number;
+  generated_at: string;
+  model_version: string;
+}

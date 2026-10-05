@@ -25,3 +25,19 @@ class HealthResponse(BaseModel):
         ge=0.0,
         description="Total monitored corridor length in kilometers.",
     )
+
+
+class ReadinessResponse(BaseModel):
+    """Payload schema for GET /api/v1/ready representing subsystem readiness."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    status: str = Field(..., description="Overall readiness: 'ready' or 'not_ready'.")
+    ready: bool = Field(..., description="Boolean readiness flag for health/readiness probes.")
+    service: str = Field(default="Drishti-Himalaya API", description="Service identifier.")
+    data_mode: str = Field(..., description="Active data mode: DEMO or LIVE.")
+    checks: dict[str, bool] = Field(
+        ...,
+        description="Individual subsystem readiness indicators.",
+    )
+    message: str = Field(..., description="Summary status message.")

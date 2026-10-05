@@ -44,6 +44,47 @@ class BaseTerrainProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_aspect_degrees(self, longitude: float, latitude: float) -> Optional[float]:
+        """Derive topographic slope aspect in degrees [0, 360) at (longitude, latitude).
+
+        Measured clockwise from true North (0° = North, 90° = East, 180° = South, 270° = West).
+        Returns None if data is unavailable or coordinate is outside coverage.
+        """
+        pass
+
+    def get_terrain_metrics(
+        self, longitude: float, latitude: float
+    ) -> Dict[str, Optional[Any]]:
+        """Return elevation (m), slope (deg), aspect (deg), and geomorphological terrain class."""
+        elev = self.get_elevation_m(longitude, latitude)
+        slope = self.get_slope_degrees(longitude, latitude)
+        aspect = self.get_aspect_degrees(longitude, latitude)
+        terrain_class = self.classify_slope(slope)
+        return {
+            "elevation_m": elev,
+            "slope_degrees": slope,
+            "aspect_degrees": aspect,
+            "terrain_class": terrain_class,
+            "source": self.source_name,
+        }
+
+    @staticmethod
+    def classify_slope(slope_degrees: Optional[float]) -> Optional[str]:
+        """Categorize slope into standard geomorphological terrain classes."""
+        if slope_degrees is None:
+            return None
+        if slope_degrees < 5.0:
+            return "flat"
+        elif slope_degrees < 15.0:
+            return "gentle_slope"
+        elif slope_degrees < 30.0:
+            return "moderate_slope"
+        elif slope_degrees < 45.0:
+            return "steep_slope"
+        else:
+            return "cliff_escarpment"
+
 
 class RasterGridTerrainProvider(BaseTerrainProvider):
     """In-memory 2D raster grid terrain provider.
@@ -183,6 +224,59 @@ class RasterGridTerrainProvider(BaseTerrainProvider):
 
         slope_rad = math.atan(math.hypot(dz_dx, dz_dy))
         return float(math.degrees(slope_rad))
+
+    def get_aspect_degrees(self, longitude: float, latitude: float) -> Optional[float]:
+        """Derive topographic slope aspect in degrees [0, 360) at (longitude, latitude).
+
+        Measured clockwise from true North: 0° = North, 90° = East, 180° = South, 270° = West.
+        Returns 0.0 for flat terrain (gradient < 1e-5), or None if out of coverage.
+        """
+        idx = self._coord_to_indices(longitude, latitude)
+        if idx is None:
+            return None
+
+        row_f, col_f = idx
+        r = int(round(row_f))
+        c = int(round(col_f))
+
+        r0 = max(0, r - 1)
+        r1 = min(self._num_rows - 1, r + 1)
+        c0 = max(0, c - 1)
+        c1 = min(self._num_cols - 1, c + 1)
+
+        z1 = self._grid[r0, c0]
+        z2 = self._grid[r0, c]
+        z3 = self._grid[r0, c1]
+
+        z4 = self._grid[r, c0]
+        z6 = self._grid[r, c1]
+
+        z7 = self._grid[r1, c0]
+        z8 = self._grid[r1, c]
+        z9 = self._grid[r1, c1]
+
+        phi = math.radians(latitude)
+        dx_m = self._cell_lon_deg * (math.pi / 180.0) * 6378137.0 * math.cos(phi)
+        dy_m = self._cell_lat_deg * (math.pi / 180.0) * 6378137.0
+
+        if dx_m <= 0.0 or dy_m <= 0.0:
+            return 0.0
+
+        # Horn (1981) partial derivatives
+        dz_dx = ((z3 + 2.0 * z6 + z9) - (z1 + 2.0 * z4 + z7)) / (8.0 * dx_m)
+        dz_dy = ((z1 + 2.0 * z2 + z3) - (z7 + 2.0 * z8 + z9)) / (8.0 * dy_m)
+
+        if math.hypot(dz_dx, dz_dy) < 1e-5:
+            return 0.0
+
+        aspect_deg = math.degrees(math.atan2(-dz_dx, -dz_dy))
+        if aspect_deg < 0.0:
+            aspect_deg += 360.0
+        elif aspect_deg >= 360.0:
+            aspect_deg -= 360.0
+
+        return float(round(aspect_deg, 2))
+
 
 
 logger = logging.getLogger(__name__)
@@ -398,14 +492,12 @@ class CopernicusDEMProvider(BaseTerrainProvider):
             logger.warning("Error reading DEM elevation at (%f, %f): %s", longitude, latitude, exc)
             return None
 
-    def get_slope_degrees(self, longitude: float, latitude: float) -> Optional[float]:
-        """Derive topographic slope gradient in degrees using Horn's 3x3 finite-difference algorithm.
+    def _compute_horn_derivatives(
+        self, longitude: float, latitude: float
+    ) -> Optional[Tuple[float, float, float]]:
+        """Compute (center_elevation, dz_dx, dz_dy) using Horn (1981) finite-difference formulation.
 
-        The ground cell dimensions are computed in meters at the local query latitude:
-            dx_m = res_lon_deg * (pi / 180.0) * 6378137.0 * cos(latitude)
-            dy_m = res_lat_deg * (pi / 180.0) * 6378137.0
-
-        Returns None if outside DEM coverage, or if any cell in the 3x3 window is nodata.
+        Returns None if coordinate is outside DEM coverage or if any cell in the 3x3 window is nodata.
         """
         if not self.is_available:
             return None
@@ -466,18 +558,73 @@ class CopernicusDEMProvider(BaseTerrainProvider):
             dy_m = tile.res_lat_deg * (math.pi / 180.0) * 6378137.0
 
             if dx_m <= 0.0 or dy_m <= 0.0:
-                return 0.0
+                return float(z5), 0.0, 0.0
 
             # Horn (1981) partial derivatives
             dz_dx = ((z3 + 2.0 * z6 + z9) - (z1 + 2.0 * z4 + z7)) / (8.0 * dx_m)
             # Row index increases southward (North to South)
             dz_dy = ((z1 + 2.0 * z2 + z3) - (z7 + 2.0 * z8 + z9)) / (8.0 * dy_m)
 
-            slope_rad = math.atan(math.hypot(dz_dx, dz_dy))
-            return float(math.degrees(slope_rad))
+            return float(z5), float(dz_dx), float(dz_dy)
         except Exception as exc:
-            logger.warning("Error computing DEM slope at (%f, %f): %s", longitude, latitude, exc)
+            logger.warning("Error computing DEM derivatives at (%f, %f): %s", longitude, latitude, exc)
             return None
+
+    def get_slope_degrees(self, longitude: float, latitude: float) -> Optional[float]:
+        """Derive topographic slope gradient in degrees using Horn's 3x3 finite-difference algorithm."""
+        res = self._compute_horn_derivatives(longitude, latitude)
+        if res is None:
+            return None
+        _, dz_dx, dz_dy = res
+        slope_rad = math.atan(math.hypot(dz_dx, dz_dy))
+        return float(math.degrees(slope_rad))
+
+    def get_aspect_degrees(self, longitude: float, latitude: float) -> Optional[float]:
+        """Derive topographic slope aspect in degrees [0, 360) clockwise from true North."""
+        res = self._compute_horn_derivatives(longitude, latitude)
+        if res is None:
+            return None
+        _, dz_dx, dz_dy = res
+        if math.hypot(dz_dx, dz_dy) < 1e-5:
+            return 0.0
+        aspect_deg = math.degrees(math.atan2(-dz_dx, -dz_dy))
+        if aspect_deg < 0.0:
+            aspect_deg += 360.0
+        elif aspect_deg >= 360.0:
+            aspect_deg -= 360.0
+        return float(round(aspect_deg, 2))
+
+    def get_terrain_metrics(self, longitude: float, latitude: float) -> Dict[str, Optional[Any]]:
+        """Return elevation (m), slope (deg), aspect (deg), and geomorphological terrain class in one pass."""
+        res = self._compute_horn_derivatives(longitude, latitude)
+        if res is None:
+            elev = self.get_elevation_m(longitude, latitude)
+            return {
+                "elevation_m": elev,
+                "slope_degrees": None,
+                "aspect_degrees": None,
+                "terrain_class": None,
+                "source": self.source_name,
+            }
+        z5, dz_dx, dz_dy = res
+        slope_deg = float(math.degrees(math.atan(math.hypot(dz_dx, dz_dy))))
+        if math.hypot(dz_dx, dz_dy) < 1e-5:
+            aspect_deg = 0.0
+        else:
+            aspect_deg = math.degrees(math.atan2(-dz_dx, -dz_dy))
+            if aspect_deg < 0.0:
+                aspect_deg += 360.0
+            elif aspect_deg >= 360.0:
+                aspect_deg -= 360.0
+            aspect_deg = float(round(aspect_deg, 2))
+
+        return {
+            "elevation_m": round(z5, 1),
+            "slope_degrees": round(slope_deg, 2),
+            "aspect_degrees": aspect_deg,
+            "terrain_class": self.classify_slope(slope_deg),
+            "source": self.source_name,
+        }
 
     def close(self) -> None:
         """Close all cached dataset readers."""

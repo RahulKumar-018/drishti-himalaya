@@ -4,6 +4,14 @@ from backend.app.risk_engine.aggregation import (
     calculate_route_objective,
     calculate_route_risk,
 )
+from backend.app.risk_engine.base import (
+    BaseRiskModel,
+    RiskEvaluationResult,
+)
+from backend.app.risk_engine.config import (
+    DEFAULT_RISK_CONFIG,
+    RiskModelConfig,
+)
 from backend.app.risk_engine.constants import (
     ARI_DRAINAGE_LAMBDA,
     ARI_WINDOW_DAYS,
@@ -37,6 +45,12 @@ from backend.app.risk_engine.constants import (
     WEIGHT_ROUTE_MAX_BOTTLENECK,
     WEIGHT_SLOPE,
 )
+from backend.app.risk_engine.features import (
+    DataQuality,
+    EnvironmentalFeatureVector,
+)
+from backend.app.risk_engine.heuristic_model import HeuristicRiskModel
+from backend.app.risk_engine.ml_model import MLRiskModel
 from backend.app.risk_engine.models import (
     FactorScoreBreakdown,
     RouteObjectiveResult,
@@ -53,6 +67,20 @@ from backend.app.risk_engine.scoring import (
     rainfall_score,
     slope_score,
 )
+
+
+def __getattr__(name: str):
+    """Lazy-load service classes to prevent circular import during package initialization."""
+    if name in ("SpatialRiskService", "get_spatial_risk_service"):
+        from backend.app.risk_engine.service import (
+            SpatialRiskService,
+            get_spatial_risk_service,
+        )
+        if name == "SpatialRiskService":
+            return SpatialRiskService
+        return get_spatial_risk_service
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 __all__ = [
     # Scoring Functions
@@ -104,4 +132,15 @@ __all__ = [
     "COLOR_HIGH",
     "COLOR_SEVERE",
     "RISK_TIER_COLORS",
+    # Phase 2C Architecture & Models
+    "RiskModelConfig",
+    "DEFAULT_RISK_CONFIG",
+    "EnvironmentalFeatureVector",
+    "DataQuality",
+    "BaseRiskModel",
+    "RiskEvaluationResult",
+    "HeuristicRiskModel",
+    "MLRiskModel",
+    "SpatialRiskService",
+    "get_spatial_risk_service",
 ]

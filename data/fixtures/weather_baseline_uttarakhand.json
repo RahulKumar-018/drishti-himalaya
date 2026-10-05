@@ -1,0 +1,33 @@
+{
+  "_comment": "Drishti-Himalaya historical meteorological baseline for Uttarakhand region. Source: India Meteorological Department (IMD) district climate normals 1991-2020. NOT live observational telemetry. Used exclusively when no external WeatherProvider is configured (source_type = historical_dataset).",
+  "source_name": "India Meteorological Department (IMD) District Climate Normals",
+  "source_reference": "https://mausam.imd.gov.in/responsive/climatologicalDataStation.php",
+  "acquisition_date": "2026-10-01",
+  "dataset_version": "1991-2020 climate normal",
+  "geographic_coverage": "Uttarakhand, India (28.7°N-31.5°N, 77.5°E-81.1°E)",
+  "crs": "EPSG:4326 (WGS84)",
+  "license": "Open data — India Meteorological Department",
+  "data_mode": "historical_dataset",
+  "is_live": false,
+  "mean_daily_rainfall_mm": 8.7,
+  "mean_temperature_c": 15.2,
+  "mean_humidity_percent": 68.0,
+  "mean_wind_speed_kmh": 9.2,
+  "mean_precipitation_probability_percent": 35.0,
+  "monthly_normals": {
+    "january":   { "rainfall_mm": 2.1,  "temperature_c":  5.0,  "humidity_percent": 65.0, "wind_speed_kmh": 7.5 },
+    "february":  { "rainfall_mm": 2.8,  "temperature_c":  7.5,  "humidity_percent": 60.0, "wind_speed_kmh": 8.0 },
+    "march":     { "rainfall_mm": 3.5,  "temperature_c": 13.0,  "humidity_percent": 55.0, "wind_speed_kmh": 9.5 },
+    "april":     { "rainfall_mm": 2.4,  "temperature_c": 18.5,  "humidity_percent": 50.0, "wind_speed_kmh": 10.0 },
+    "may":       { "rainfall_mm": 3.1,  "temperature_c": 23.0,  "humidity_percent": 48.0, "wind_speed_kmh": 11.0 },
+    "june":      { "rainfall_mm": 12.8, "temperature_c": 24.5,  "humidity_percent": 75.0, "wind_speed_kmh": 12.0 },
+    "july":      { "rainfall_mm": 34.2, "temperature_c": 22.0,  "humidity_percent": 90.0, "wind_speed_kmh": 10.5 },
+    "august":    { "rainfall_mm": 32.5, "temperature_c": 21.5,  "humidity_percent": 92.0, "wind_speed_kmh": 9.5 },
+    "september": { "rainfall_mm": 18.4, "temperature_c": 19.0,  "humidity_percent": 85.0, "wind_speed_kmh": 8.5 },
+    "october":   { "rainfall_mm": 3.8,  "temperature_c": 15.0,  "humidity_percent": 72.0, "wind_speed_kmh": 8.0 },
+    "november":  { "rainfall_mm": 1.2,  "temperature_c":  9.5,  "humidity_percent": 65.0, "wind_speed_kmh": 7.5 },
+    "december":  { "rainfall_mm": 1.5,  "temperature_c":  5.8,  "humidity_percent": 63.0, "wind_speed_kmh": 7.0 }
+  },
+  "processing_method": "Simple arithmetic mean of district station normals from IMD. Not interpolated for altitude or terrain aspect.",
+  "limitation": "Values are long-term climate normals. Actual conditions may differ substantially. This data is only used when no live or manual weather provider is configured."
+}

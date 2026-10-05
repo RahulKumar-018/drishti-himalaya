@@ -1,14 +1,14 @@
-"""System health and runtime readiness API endpoint."""
-
+from pathlib import Path
 import sqlite3
 from typing import Tuple
 from urllib.parse import urlparse
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 
 from backend.app.core.config import settings
+from backend.app.core.database import db_manager
 from backend.app.geospatial.service import get_inventory_service
-from backend.app.schemas.health import HealthResponse
+from backend.app.schemas.health import HealthResponse, ReadinessResponse
 from backend.app.services.weather_service import DEFAULT_FIXTURE_PATH, get_weather_service
 
 router = APIRouter(tags=["System Health"])
@@ -16,25 +16,8 @@ router = APIRouter(tags=["System Health"])
 
 def _check_database() -> Tuple[bool, str]:
     """Inspect configured database reachability without raising unhandled errors."""
-    db_url = settings.DATABASE_URL
-    if db_url.startswith("sqlite"):
-        try:
-            # Parse sqlite path: sqlite:///./path.db or sqlite:///:memory:
-            db_path = db_url.replace("sqlite:///", "").replace("sqlite://", "")
-            if not db_path:
-                db_path = ":memory:"
-            conn = sqlite3.connect(db_path, timeout=2.0)
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1;")
-            cursor.close()
-            conn.close()
-            return True, f"connected ({'in-memory' if ':memory:' in db_path else 'SQLite'})"
-        except Exception as exc:
-            return False, f"disconnected (SQLite error: {exc})"
-    elif db_url.startswith(("postgresql", "postgres")):
-        # Without optional asyncpg/psycopg2 drivers or external db server, report honest state
-        return False, "disconnected (PostgreSQL server unreachable or driver absent)"
-    return False, f"disconnected (unsupported URI: {db_url})"
+    is_ready, desc, _ = db_manager.check_readiness()
+    return is_ready, desc
 
 
 def _check_weather() -> Tuple[bool, str]:
@@ -97,4 +80,72 @@ def get_health() -> HealthResponse:
         routing_engine=routing_desc,
         cached_landslide_scars=landslide_count,
         corridor_length_km=156.4,
+    )
+
+
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    summary="Subsystem Readiness Probe",
+    description="Inspect whether local terrain DEM, landslide spatial index, weather feed, and routing services are initialized and ready to serve traffic.",
+)
+def get_ready(response: Response) -> ReadinessResponse:
+    """Readiness probe evaluating local and upstream subsystem availability."""
+    # 1. Copernicus DEM check
+    dem_dir = Path(settings.DEM_DIRECTORY)
+    dem_ready = dem_dir.exists() and any(dem_dir.rglob("*.tif"))
+
+    # 2. Historical landslide KDTree inventory check
+    inv_svc = get_inventory_service()
+    if not inv_svc.is_ready:
+        try:
+            inv_svc.load_uttarakhand_inventory()
+        except Exception:
+            pass
+    inventory_ready = inv_svc.is_ready and inv_svc.total_count > 0
+
+    # 3. Weather check
+    weather_ok, _ = _check_weather()
+
+    # 4. Routing check
+    routing_ok, _ = _check_routing()
+
+    # 5. Historical OSM cuttings check
+    cuttings_file = (
+        Path(__file__).resolve().parents[2]
+        / "data"
+        / "uttarakhand_cuttings_2018.json"
+    )
+    cuttings_ready = cuttings_file.exists()
+
+    # 6. Database readiness check
+    db_ok, _ = _check_database()
+
+    checks = {
+        "terrain_dem": dem_ready,
+        "landslide_inventory": inventory_ready,
+        "weather": weather_ok,
+        "routing": routing_ok,
+        "historical_cuttings": cuttings_ready,
+        "database": db_ok,
+    }
+
+    critical_ready = dem_ready and inventory_ready and weather_ok and routing_ok
+
+    if critical_ready:
+        response.status_code = status.HTTP_200_OK
+        overall_status = "ready"
+        message = "All critical local and mock dependencies are initialized."
+    else:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        overall_status = "not_ready"
+        message = "One or more critical subsystems are not ready."
+
+    return ReadinessResponse(
+        status=overall_status,
+        ready=critical_ready,
+        service="Drishti-Himalaya API",
+        data_mode=settings.DATA_MODE.upper(),
+        checks=checks,
+        message=message,
     )

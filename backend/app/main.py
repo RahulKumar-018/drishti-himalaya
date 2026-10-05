@@ -217,4 +217,11 @@ async def generic_exception_handler(
 # ---------------------------------------------------------------------------
 # Router Mounting
 # ---------------------------------------------------------------------------
+from backend.app.api.v1.environmental import router as environmental_router
+from backend.app.api.v1.health import router as health_router
+from backend.app.api.v1.risk import router as risk_router
+
 app.include_router(api_v1_router, prefix="/api/v1")
+app.include_router(environmental_router, prefix="/api")
+app.include_router(health_router, prefix="/api")
+app.include_router(risk_router, prefix="/api")

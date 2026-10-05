@@ -19,12 +19,46 @@ class Settings(BaseSettings):
         description="Operating mode: DEMO uses offline datasets, LIVE connects to external feeds.",
     )
 
-    # Database Configuration
+    # Database & Supabase Persistence Configuration
     DATABASE_URL: str = Field(
         default="sqlite:///./drishti_himalaya.db",
         min_length=1,
         description="Database connection URI (SQLite for local demo, PostgreSQL/PostGIS for production).",
     )
+    DATABASE_ENABLED: bool = Field(
+        default=False,
+        description="Explicit toggle for database persistence. False by default in local DEMO mode.",
+    )
+    SUPABASE_URL: str | None = Field(
+        default=None,
+        description="Supabase project URL.",
+    )
+    SUPABASE_ANON_KEY: str | None = Field(
+        default=None,
+        description="Supabase anonymous client API key.",
+    )
+    SUPABASE_SERVICE_ROLE_KEY: str | None = Field(
+        default=None,
+        description="Supabase privileged service role key (backend only).",
+    )
+
+    @property
+    def is_postgres(self) -> bool:
+        """True if the configured database URI targets PostgreSQL/Supabase."""
+        return self.DATABASE_URL.lower().startswith(("postgresql", "postgres"))
+
+    @property
+    def async_database_url(self) -> str:
+        """Produce an async-driver-compatible connection string."""
+        url = self.DATABASE_URL
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("sqlite:///"):
+            return url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+        return url
+
 
     # Server Configuration
     HOST: str = Field(default="127.0.0.1", description="Host address for the ASGI server.")
@@ -131,6 +165,10 @@ class Settings(BaseSettings):
     OPEN_METEO_BASE_URL: str = Field(
         default="https://api.open-meteo.com/v1/forecast",
         description="Base URL for Open-Meteo weather forecasts.",
+    )
+    WEATHER_API_KEY: str | None = Field(
+        default=None,
+        description="Optional API key for external commercial weather provider.",
     )
     WEATHER_CACHE_TTL_HOURS: int = Field(
         default=3,

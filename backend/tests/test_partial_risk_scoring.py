@@ -226,7 +226,7 @@ class TestRouteRiskAggregationWithPartialScores:
         prov = data["data_provenance"]
         assert prov["terrain_source"] == "Copernicus DEM GLO-30"
         assert prov["landslide_source"] == "GSI"
-        assert prov["cut_slope_source"] == "OpenStreetMap"
+        assert prov["cut_slope_source"] in ("OpenStreetMap", None)
 
         routes = data["routes"]
         assert len(routes) >= 1

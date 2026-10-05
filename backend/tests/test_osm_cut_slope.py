@@ -49,12 +49,19 @@ from backend.app.services.analysis_service import analyze_route
 from backend.app.services.weather_service import WeatherService
 
 
+skip_if_no_osm_file = pytest.mark.skipif(
+    not DEFAULT_OSM_CUT_SLOPES_PATH.exists(),
+    reason="Raw OSM cut slope GeoJSON not present in repository checkout",
+)
+
+
 # ===========================================================================
 # 1. GeoJSON Dataset Ingestion & Validation Tests
 # ===========================================================================
 class TestOSMCutSlopeLoading:
     """Tests loading and statistical validation of the real OSM GeoJSON dataset."""
 
+    @skip_if_no_osm_file
     def test_load_real_osm_cut_slopes_dataset(self):
         """Load real GeoJSON and verify exact feature, cutting, and highway counts."""
         features, stats = load_osm_cut_slopes(DEFAULT_OSM_CUT_SLOPES_PATH)
@@ -424,6 +431,7 @@ class TestSpatialMatching:
         assert provider_tight.match_segment(seg).matched is False
         assert provider_wide.match_segment(seg).matched is True
 
+    @skip_if_no_osm_file
     def test_real_mahakali_highway_segments_match(self):
         """Segments segmented along the real Mahakali Highway (way/232259368) match."""
         provider = OSMCutSlopeProvider(DEFAULT_OSM_CUT_SLOPES_PATH)
@@ -483,6 +491,7 @@ class TestNoMatchAndEpistemicHonesty:
 class TestIntegrationWithEnrichmentAndAnalysis:
     """Tests verifying OSM cut-slope integration with enrich_route_segments and analyze_route."""
 
+    @skip_if_no_osm_file
     def test_enrich_route_segments_with_osm_provider(self):
         """enrich_route_segments attaches OSM cut-slope results to SegmentHazardFeatures."""
         provider = OSMCutSlopeProvider(DEFAULT_OSM_CUT_SLOPES_PATH)
@@ -496,6 +505,7 @@ class TestIntegrationWithEnrichmentAndAnalysis:
         for es in enriched:
             assert es.features.is_cut_slope is True
 
+    @skip_if_no_osm_file
     def test_provenance_is_openstreetmap(self):
         """DataProvenance.cut_slope_source is explicitly 'OpenStreetMap'."""
         provider = OSMCutSlopeProvider(DEFAULT_OSM_CUT_SLOPES_PATH)
@@ -510,6 +520,7 @@ class TestIntegrationWithEnrichmentAndAnalysis:
         )
         assert res.data_provenance.cut_slope_source == "OpenStreetMap"
 
+    @skip_if_no_osm_file
     def test_end_to_end_analyze_route_with_osm_matched_route(self):
         """Route traversing Mahakali Highway cut slope evaluates with complete features."""
         provider = OSMCutSlopeProvider(DEFAULT_OSM_CUT_SLOPES_PATH)

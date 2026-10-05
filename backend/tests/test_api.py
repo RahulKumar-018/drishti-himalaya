@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.core.config import settings
 from backend.app.main import app
-from backend.app.schemas.health import HealthResponse
+from backend.app.schemas.health import HealthResponse, ReadinessResponse
 from backend.app.services.segment_repository import get_segment_repository
 
 
@@ -52,6 +52,35 @@ class TestAPIInfrastructure:
         assert "connected" in validated.database.lower()
         assert validated.cached_landslide_scars == 5206
         assert validated.corridor_length_km > 0.0
+
+    def test_04b_ready_returns_valid_response(self, client: TestClient) -> None:
+        """4b. Verify /api/v1/ready returns valid response matching ReadinessResponse."""
+        response = client.get("/api/v1/ready")
+        assert response.status_code == 200
+        data = response.json()
+        validated = ReadinessResponse.model_validate(data)
+        assert validated.service == "Drishti-Himalaya API"
+        assert validated.status == "ready"
+        assert validated.ready is True
+        assert validated.checks["terrain_dem"] is True
+        assert validated.checks["landslide_inventory"] is True
+        assert validated.checks["weather"] is True
+        assert validated.checks["routing"] is True
+        assert validated.checks["historical_cuttings"] is True
+        assert validated.checks["database"] is True
+
+    def test_04c_historical_cuttings_returns_valid_response(self, client: TestClient) -> None:
+        """4c. Verify /api/v1/hazard/cuttings returns 2018 historical OSM snapshot."""
+        response = client.get("/api/v1/hazard/cuttings")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2
+        assert data["year"] == 2018
+        assert "OpenStreetMap" in data["source"]
+        assert len(data["features"]) == 2
+        ids = {f["id"] for f in data["features"]}
+        assert 225786479 in ids
+        assert 343144200 in ids
 
     def test_20_cors_middleware_installed(self, client: TestClient) -> None:
         """20. Verify CORS middleware is properly installed and responds to preflight."""

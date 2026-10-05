@@ -22,14 +22,22 @@ RAW_GSI_PATH = Path("data/raw/GSI_Landslide_Inventory.geojson")
 PROCESSED_UK_PATH = Path("data/processed/landslide_inventory_uttarakhand.geojson")
 
 
+skip_if_no_raw_gsi = pytest.mark.skipif(
+    not RAW_GSI_PATH.exists(),
+    reason="Raw nationwide GSI GeoJSON not present in repository checkout",
+)
+
+
 class TestGSILoader:
     """Test suite for Geological Survey of India (GSI) data loading and validation."""
 
+    @skip_if_no_raw_gsi
     def test_real_gsi_file_exists_and_loads(self) -> None:
         """1. Real GSI file exists and can be loaded."""
         assert RAW_GSI_PATH.exists()
         assert RAW_GSI_PATH.stat().st_size > 50 * 1024 * 1024  # > 50 MB
 
+    @skip_if_no_raw_gsi
     def test_file_recognized_as_feature_collection(self) -> None:
         """2. Raw GeoJSON is verified as a FeatureCollection with CRS."""
         with open(RAW_GSI_PATH, "r", encoding="utf-8") as f:
@@ -38,12 +46,14 @@ class TestGSILoader:
         assert "features" in header
         assert isinstance(header["features"], list)
 
+    @skip_if_no_raw_gsi
     def test_actual_feature_count_can_be_read(self) -> None:
         """3. Total feature count in the raw dataset is exactly 30,842."""
         with open(RAW_GSI_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
         assert len(data["features"]) == 30842
 
+    @skip_if_no_raw_gsi
     def test_geometry_types_are_points(self) -> None:
         """4. Geometry types in the raw dataset are Point geometries."""
         with open(RAW_GSI_PATH, "r", encoding="utf-8") as f:
@@ -51,6 +61,7 @@ class TestGSILoader:
         geom_types = {f["geometry"]["type"] for f in data["features"] if f.get("geometry")}
         assert geom_types == {"Point"}
 
+    @skip_if_no_raw_gsi
     def test_actual_state_attribute_detected(self) -> None:
         """5. Property field 'STATE' is present and holds state names."""
         with open(RAW_GSI_PATH, "r", encoding="utf-8") as f:
@@ -58,12 +69,14 @@ class TestGSILoader:
         first_props = data["features"][0].get("properties", {})
         assert "STATE" in first_props
 
+    @skip_if_no_raw_gsi
     def test_uttarakhand_filtering_works(self) -> None:
         """6. Filtering for Uttarakhand yields exactly 5,206 records."""
         loader = GSILoader()
         uk_records = loader.load(RAW_GSI_PATH, state_filter="UTTARAKHAND")
         assert len(uk_records) == 5206
 
+    @skip_if_no_raw_gsi
     def test_gsi_provenance_preserved(self) -> None:
         """7. GSI provenance and original attributes are preserved."""
         loader = GSILoader()
@@ -84,6 +97,7 @@ class TestGSILoader:
         with pytest.raises(ValueError):
             loader.load(bad_json)
 
+    @skip_if_no_raw_gsi
     def test_raw_source_not_modified(self) -> None:
         """9. Loading does not modify the raw source file size or timestamp."""
         mtime_before = RAW_GSI_PATH.stat().st_mtime

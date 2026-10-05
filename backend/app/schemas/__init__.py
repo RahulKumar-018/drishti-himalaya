@@ -16,6 +16,15 @@ from backend.app.schemas.hazard import (
     SegmentAttributionResponse,
     SlopeFactorAttribution,
 )
+from backend.app.schemas.environmental import (
+    DisasterEventResponse,
+    LocationCreate,
+    LocationEnvironmentResponse,
+    LocationListResponse,
+    LocationResponse,
+    TerrainObservationResponse,
+    WeatherObservationResponse,
+)
 from backend.app.schemas.health import HealthResponse
 from backend.app.schemas.route import (
     AnalyzeRouteRequest,
@@ -54,4 +63,12 @@ __all__ = [
     "CorridorWeatherSummaryResponse",
     # Health
     "HealthResponse",
+    # Environmental (Phase 2B)
+    "LocationCreate",
+    "LocationResponse",
+    "LocationListResponse",
+    "TerrainObservationResponse",
+    "DisasterEventResponse",
+    "WeatherObservationResponse",
+    "LocationEnvironmentResponse",
 ]
