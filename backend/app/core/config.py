@@ -48,6 +48,16 @@ class Settings(BaseSettings):
         return self.DATABASE_URL.lower().startswith(("postgresql", "postgres"))
 
     @property
+    def sync_database_url(self) -> str:
+        """Produce a sync-driver-compatible connection string (defaults to psycopg v3 for PostgreSQL)."""
+        url = self.DATABASE_URL
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        elif url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+psycopg://", 1)
+        return url
+
+    @property
     def async_database_url(self) -> str:
         """Produce an async-driver-compatible connection string."""
         url = self.DATABASE_URL
@@ -58,6 +68,9 @@ class Settings(BaseSettings):
         elif url.startswith("sqlite:///"):
             return url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
         return url
+
+
+
 
 
     # Server Configuration

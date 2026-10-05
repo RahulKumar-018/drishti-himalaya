@@ -41,7 +41,7 @@ class DatabaseManager:
     def get_sync_engine(self):
         """Lazily initialize and return the synchronous SQLAlchemy engine."""
         if self._sync_engine is None:
-            db_url = settings.DATABASE_URL
+            db_url = settings.sync_database_url
             connect_args = {}
             if db_url.startswith("sqlite"):
                 connect_args["check_same_thread"] = False
