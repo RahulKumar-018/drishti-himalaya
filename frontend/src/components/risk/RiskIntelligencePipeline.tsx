@@ -66,7 +66,7 @@ export const RiskIntelligencePipeline: React.FC<RiskIntelligencePipelineProps> =
       statusText: 'Deterministic V1 (Active)',
       statusType: 'deterministic',
       details: 'Multi-criteria weighted fusion currently active. Machine learning spatial susceptibility inference planned for backend release.',
-      keyMetric: '35/30/20/15 Wts',
+      keyMetric: '30/25/20/15/10 Wts',
     },
     {
       id: 'decision',
@@ -182,17 +182,7 @@ export const RiskIntelligencePipeline: React.FC<RiskIntelligencePipelineProps> =
         <div className="dh-pipeline__weights-grid">
           <div className="dh-pipeline__weight-item">
             <div className="dh-pipeline__weight-top">
-              <span>Topographic Slope</span>
-              <strong>35% wt</strong>
-            </div>
-            <div className="dh-pipeline__weight-bar-bg">
-              <div className="dh-pipeline__weight-bar" style={{ width: '35%', background: 'var(--accent-primary)' }} />
-            </div>
-          </div>
-
-          <div className="dh-pipeline__weight-item">
-            <div className="dh-pipeline__weight-top">
-              <span>Dynamic Rainfall</span>
+              <span>Precipitation Intensity</span>
               <strong>30% wt</strong>
             </div>
             <div className="dh-pipeline__weight-bar-bg">
@@ -202,21 +192,41 @@ export const RiskIntelligencePipeline: React.FC<RiskIntelligencePipelineProps> =
 
           <div className="dh-pipeline__weight-item">
             <div className="dh-pipeline__weight-top">
-              <span>Historical Scar Proximity</span>
-              <strong>20% wt</strong>
+              <span>24h Rainfall Accumulation</span>
+              <strong>25% wt</strong>
             </div>
             <div className="dh-pipeline__weight-bar-bg">
-              <div className="dh-pipeline__weight-bar" style={{ width: '20%', background: 'var(--risk-low)' }} />
+              <div className="dh-pipeline__weight-bar" style={{ width: '25%', background: 'var(--accent-primary)' }} />
             </div>
           </div>
 
           <div className="dh-pipeline__weight-item">
             <div className="dh-pipeline__weight-top">
-              <span>Road Geometry</span>
+              <span>Terrain Slope Gradient</span>
+              <strong>20% wt</strong>
+            </div>
+            <div className="dh-pipeline__weight-bar-bg">
+              <div className="dh-pipeline__weight-bar" style={{ width: '20%', background: 'var(--accent-primary)' }} />
+            </div>
+          </div>
+
+          <div className="dh-pipeline__weight-item">
+            <div className="dh-pipeline__weight-top">
+              <span>Precipitation Probability</span>
               <strong>15% wt</strong>
             </div>
             <div className="dh-pipeline__weight-bar-bg">
               <div className="dh-pipeline__weight-bar" style={{ width: '15%', background: 'var(--risk-low)' }} />
+            </div>
+          </div>
+
+          <div className="dh-pipeline__weight-item">
+            <div className="dh-pipeline__weight-top">
+              <span>Orographic Elevation</span>
+              <strong>10% wt</strong>
+            </div>
+            <div className="dh-pipeline__weight-bar-bg">
+              <div className="dh-pipeline__weight-bar" style={{ width: '10%', background: 'var(--risk-low)' }} />
             </div>
           </div>
         </div>

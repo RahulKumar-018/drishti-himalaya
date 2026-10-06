@@ -119,7 +119,7 @@ export class DeterministicRiskEngine implements IRiskEngine {
         primaryFactor: null,
         factors: this.buildInsufficientFactorsList(effectiveConfig),
         summaryExplanation:
-          'Hazard level is indeterminate. Environmental telemetry stream is offline, corrupt, or insufficient.',
+          'Hazard level is indeterminate. Environmental telemetry stream is offline, corrupt, or insufficient; hazard state cannot be verified.',
         dataQuality: features.dataQuality,
         evaluatedAt,
       };
@@ -377,7 +377,8 @@ export class DeterministicRiskEngine implements IRiskEngine {
         colorHex: RISK_TIER_CONFIG.INDETERMINATE.colorHex,
         primaryFactor: null,
         factors: [...allCandidateFactors, slopeInstabilityFactor, scarFactor],
-        summaryExplanation: 'No reliable active telemetry factors available to compute hazard score.',
+        summaryExplanation:
+          'Hazard level is indeterminate. No reliable active telemetry factors available to compute hazard score; hazard state cannot be verified.',
         dataQuality: features.dataQuality,
         evaluatedAt,
       };
@@ -478,7 +479,8 @@ export class DeterministicRiskEngine implements IRiskEngine {
         ? ` Evaluated across ${activeCount} active factor(s) with dynamic weight normalization (${unavailableCount} unavailable).`
         : ` Evaluated across all ${activeCount} active hydro-meteorological and hypsometric factors.`;
 
-    const caveatText = ' Static geotechnical slope stability and historical scars are unassessed.';
+    const caveatText =
+      ' Static geotechnical slope stability and historical scars are unassessed; evaluated as a decision-support proxy and does not predict landslides.';
 
     return `${level} hazard exposure (Score: ${score.toFixed(1)}/100). ${tierDesc}${driverText}${coverageText}${caveatText}`;
   }
