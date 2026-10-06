@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import clsx from 'clsx';
 import {
   CloudRain,
@@ -347,13 +348,23 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         <RouteSetupPanel locationSelection={locationSelection} />
 
         {/* Section 0.5: Detailed Hazard Segment Inspection (UXMagic Frame 4) */}
-        {selectedSegment && (
-          <SegmentInspection
-            segment={selectedSegment}
-            onClose={() => onSelectSegment?.(null)}
-            onFocusMap={(seg) => onSelectSegment?.(seg)}
-          />
-        )}
+        <AnimatePresence>
+          {selectedSegment && (
+            <motion.div
+              layout
+              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+              animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
+              exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            >
+              <SegmentInspection
+                segment={selectedSegment}
+                onClose={() => onSelectSegment?.(null)}
+                onFocusMap={(seg) => onSelectSegment?.(seg)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Section 1: Real Environmental Telemetry (Phase 3 Foundation) */}
         <Card

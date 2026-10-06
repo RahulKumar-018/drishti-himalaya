@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { MotionConfig } from 'motion/react';
 import { AppShell, NavItemKey } from './components/shell';
 import {
   HomePage,
@@ -91,82 +92,84 @@ export default function App(): React.JSX.Element {
   };
 
   return (
-    <AppShell
-      activeNav={activeTab}
-      onNavClick={(key) => handleNavigate(key)}
-      riskAssessment={liveRiskAssessment}
-      isLoadingRisk={isLoading}
-      isRiskError={isError}
-      showCorridorStatus={activeTab === 'map' || activeTab === 'corridor'}
-      segments={segments}
-      selectedSegmentId={selectedSegment?.id ?? null}
-      onSelectSegment={setSelectedSegment}
-    >
-      {activeTab === 'home' && (
-        <HomePage
-          onNavigate={handleNavigate}
-          riskAssessment={liveRiskAssessment}
-          envData={envData}
-          segments={segments}
-          selectedSegmentId={selectedSegment?.id ?? null}
-          onSelectSegment={setSelectedSegment}
-          scenarioPrecipitation={scenarioPrecipitation}
-          onScenarioChange={setScenarioPrecipitation}
-          scenarioRiskAssessment={scenarioRiskAssessment}
-          locationSelection={locationSelection}
-        />
-      )}
+    <MotionConfig reducedMotion="user">
+      <AppShell
+        activeNav={activeTab}
+        onNavClick={(key) => handleNavigate(key)}
+        riskAssessment={liveRiskAssessment}
+        isLoadingRisk={isLoading}
+        isRiskError={isError}
+        showCorridorStatus={activeTab === 'map' || activeTab === 'corridor'}
+        segments={segments}
+        selectedSegmentId={selectedSegment?.id ?? null}
+        onSelectSegment={setSelectedSegment}
+      >
+        {activeTab === 'home' && (
+          <HomePage
+            onNavigate={handleNavigate}
+            riskAssessment={liveRiskAssessment}
+            envData={envData}
+            segments={segments}
+            selectedSegmentId={selectedSegment?.id ?? null}
+            onSelectSegment={setSelectedSegment}
+            scenarioPrecipitation={scenarioPrecipitation}
+            onScenarioChange={setScenarioPrecipitation}
+            scenarioRiskAssessment={scenarioRiskAssessment}
+            locationSelection={locationSelection}
+          />
+        )}
 
-      {activeTab === 'dashboard' && (
-        <DashboardPage
-          envData={envData}
-          riskAssessment={liveRiskAssessment}
-          segments={segments}
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
-          isError={isError}
-          lastUpdated={lastUpdated}
-          onRefresh={refresh}
-          onNavigate={handleNavigate}
-        />
-      )}
+        {activeTab === 'dashboard' && (
+          <DashboardPage
+            envData={envData}
+            riskAssessment={liveRiskAssessment}
+            segments={segments}
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            isError={isError}
+            lastUpdated={lastUpdated}
+            onRefresh={refresh}
+            onNavigate={handleNavigate}
+          />
+        )}
 
-      {(activeTab === 'map' || activeTab === 'corridor') && (
-        <MapWorkspacePage
-          envData={envData}
-          riskAssessment={liveRiskAssessment}
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
-          isError={isError}
-          error={error}
-          lastUpdated={lastUpdated}
-          onRefresh={refresh}
-          segments={segments}
-          selectedSegmentId={selectedSegment?.id ?? null}
-          onSelectSegment={setSelectedSegment}
-          scenarioPrecipitation={scenarioPrecipitation}
-          onScenarioChange={setScenarioPrecipitation}
-          scenarioRiskAssessment={scenarioRiskAssessment}
-          locationSelection={locationSelection}
-        />
-      )}
+        {(activeTab === 'map' || activeTab === 'corridor') && (
+          <MapWorkspacePage
+            envData={envData}
+            riskAssessment={liveRiskAssessment}
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            isError={isError}
+            error={error}
+            lastUpdated={lastUpdated}
+            onRefresh={refresh}
+            segments={segments}
+            selectedSegmentId={selectedSegment?.id ?? null}
+            onSelectSegment={setSelectedSegment}
+            scenarioPrecipitation={scenarioPrecipitation}
+            onScenarioChange={setScenarioPrecipitation}
+            scenarioRiskAssessment={scenarioRiskAssessment}
+            locationSelection={locationSelection}
+          />
+        )}
 
-      {(activeTab === 'risk-analysis' || activeTab === 'overview') && (
-        <RiskAnalysisPage
-          riskAssessment={liveRiskAssessment}
-          envData={envData}
-          scenarioPrecipitation={scenarioPrecipitation}
-          onScenarioChange={setScenarioPrecipitation}
-        />
-      )}
+        {(activeTab === 'risk-analysis' || activeTab === 'overview') && (
+          <RiskAnalysisPage
+            riskAssessment={liveRiskAssessment}
+            envData={envData}
+            scenarioPrecipitation={scenarioPrecipitation}
+            onScenarioChange={setScenarioPrecipitation}
+          />
+        )}
 
-      {activeTab === 'alerts' && (
-        <AlertsPage onNavigate={handleNavigate} />
-      )}
+        {activeTab === 'alerts' && (
+          <AlertsPage onNavigate={handleNavigate} />
+        )}
 
-      {activeTab === 'about' && (
-        <AboutPage onNavigate={handleNavigate} />
-      )}
-    </AppShell>
+        {activeTab === 'about' && (
+          <AboutPage onNavigate={handleNavigate} />
+        )}
+      </AppShell>
+    </MotionConfig>
   );
 }
