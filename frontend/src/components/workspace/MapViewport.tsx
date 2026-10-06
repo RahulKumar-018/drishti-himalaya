@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 import { ArrowRight, Compass } from 'lucide-react';
 import { Divider } from '../common/Divider';
@@ -44,6 +44,8 @@ export const MapViewport: React.FC<MapViewportProps> = ({
   const envData = propEnvData !== undefined ? propEnvData : hookEnv.data;
   const isLoading = propIsLoading !== undefined ? propIsLoading : hookEnv.isLoading;
   const isError = propIsError !== undefined ? propIsError : hookEnv.isError;
+
+  const [viewMode, setViewMode] = useState<'3d' | 'map'>('3d');
 
   const hookRisk = useRiskAssessment(propRiskAssessment ? null : envData);
   const riskAssessment = propRiskAssessment ?? hookRisk;
@@ -127,11 +129,19 @@ export const MapViewport: React.FC<MapViewportProps> = ({
               HAZARD INTELLIGENCE GRID · UTTARAKHAND
             </span>
           )}
+          <Divider orientation="vertical" variant="subtle" />
+          <button 
+            className="dh-button dh-button--secondary dh-button--sm"
+            onClick={() => setViewMode(v => v === '3d' ? 'map' : '3d')}
+            style={{ fontSize: '10px', padding: '2px 8px' }}
+          >
+            {viewMode === '3d' ? 'SWITCH TO MAP' : 'SWITCH TO 3D'}
+          </button>
         </div>
       </div>
 
       {/* Main Map Canvas Area: Active Leaflet Map */}
-      <div className="dh-map-viewport__canvas">
+      <div className="dh-map-viewport__canvas" style={{ display: viewMode === 'map' ? 'block' : 'none' }}>
         <InteractiveMap
           segments={segments}
           selectedSegmentId={selectedSegmentId}

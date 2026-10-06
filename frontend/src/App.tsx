@@ -98,6 +98,9 @@ export default function App(): React.JSX.Element {
       isLoadingRisk={isLoading}
       isRiskError={isError}
       showCorridorStatus={activeTab === 'map' || activeTab === 'corridor'}
+      segments={segments}
+      selectedSegmentId={selectedSegment?.id ?? null}
+      onSelectSegment={setSelectedSegment}
     >
       {activeTab === 'home' && (
         <HomePage

@@ -234,7 +234,10 @@ export const RiskAnalysisPage: React.FC<RiskAnalysisPageProps> = ({
       </section>
 
       {/* ─── 4. CONCEPTUAL INTELLIGENCE PIPELINE ──────────────────────────── */}
-      <RiskIntelligencePipeline className="dh-analysis-page__pipeline" />
+      <RiskIntelligencePipeline
+        className="dh-analysis-page__pipeline"
+        riskAssessment={activeAssessment}
+      />
 
       {/* ─── 5. MATHEMATICAL FORMULATION & ML INTEGRATION CONTRACT ───────── */}
       <RiskFormulaViewer />

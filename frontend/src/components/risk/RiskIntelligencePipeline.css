@@ -4,6 +4,8 @@
 
 .dh-pipeline {
   background: var(--bg-surface);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
@@ -12,6 +14,52 @@
   flex-direction: column;
   gap: var(--space-6);
   width: 100%;
+}
+
+/* Top Flow Stepper */
+.dh-pipeline__stepper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  background: var(--bg-surface-elevated);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.dh-pipeline__step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dh-pipeline__step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+}
+
+.dh-pipeline__step-dot--det {
+  background: var(--risk-low);
+}
+
+.dh-pipeline__step-text {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.dh-pipeline__step-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .dh-pipeline__header {
@@ -90,6 +138,8 @@
   flex: 1;
   min-width: 200px;
   background: var(--bg-surface-elevated);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-4);
@@ -109,6 +159,11 @@
 
 .dh-pipeline__card--det {
   border-left: 3px solid var(--risk-low);
+}
+
+.dh-pipeline__card--planned {
+  border-left: 3px dashed var(--text-muted);
+  opacity: 0.85;
 }
 
 .dh-pipeline__card-top {
@@ -151,6 +206,12 @@
   background: var(--risk-low-bg);
   color: var(--risk-low);
   border: 1px solid var(--risk-low-border);
+}
+
+.dh-pipeline__status-tag--planned {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-subtle);
 }
 
 .dh-pipeline__stage-name {
@@ -236,6 +297,8 @@
 /* Model Attribution Strip */
 .dh-pipeline__attribution-strip {
   background: var(--bg-surface-elevated);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-4);
@@ -291,6 +354,92 @@
 .dh-pipeline__weight-bar {
   height: 100%;
   border-radius: var(--radius-full);
+}
+
+.dh-pipeline__attribution-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.dh-pipeline__weight-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dh-pipeline__weight-item--unavailable {
+  opacity: 0.6;
+}
+
+.dh-pipeline__weight-unavail {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dh-pipeline__future-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.dh-pipeline__future-heading {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.dh-pipeline__future-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.dh-pipeline__future-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background-color: var(--bg-surface-muted);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.dh-pipeline__future-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dh-pipeline__future-name {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.dh-pipeline__future-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.12);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.dh-pipeline__future-desc {
+  font-size: 9.5px;
+  color: var(--text-muted);
 }
 
 @media (max-width: 900px) {

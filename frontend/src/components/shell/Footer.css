@@ -4,6 +4,8 @@
 
 .dh-footer {
   background-color: var(--bg-surface);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border-top: 1px solid var(--border-default);
   color: var(--text-secondary);
   font-family: var(--font-sans);

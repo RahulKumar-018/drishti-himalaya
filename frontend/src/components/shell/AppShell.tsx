@@ -5,6 +5,8 @@ import { TopNav, NavItemKey } from './TopNav';
 import { CorridorStatus } from './CorridorStatus';
 import { Footer } from './Footer';
 import { RiskAssessment } from '../../services/risk/types';
+import { CorridorSegmentRisk } from '../../services/risk/segmentRiskService';
+import { DrishtiTerrainScene } from '../visualization/DrishtiTerrainScene';
 import './AppShell.css';
 
 export interface AppShellProps {
@@ -17,6 +19,9 @@ export interface AppShellProps {
   isRiskError?: boolean;
   showCorridorStatus?: boolean;
   className?: string;
+  segments?: CorridorSegmentRisk[];
+  selectedSegmentId?: string | null;
+  onSelectSegment?: (segment: CorridorSegmentRisk | null) => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
@@ -29,6 +34,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   isRiskError,
   showCorridorStatus,
   className,
+  segments = [],
+  selectedSegmentId = null,
+  onSelectSegment,
 }) => {
   // Determine if corridor status bar should be shown
   const shouldShowCorridor =
@@ -38,6 +46,13 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   return (
     <div className={clsx('dh-app-shell', className)}>
+      {/* Global 3D Atmospheric Background */}
+      <DrishtiTerrainScene 
+        segments={segments}
+        selectedSegmentId={selectedSegmentId}
+        onSelectSegment={onSelectSegment}
+      />
+
       {/* 1. Global Product Navigation Header (Single source of truth for Risk) */}
       <TopNav
         activeNav={activeNav}

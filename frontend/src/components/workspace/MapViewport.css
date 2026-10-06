@@ -8,8 +8,11 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background-color: rgba(13, 17, 29, 0.4);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-sizing: border-box;
@@ -92,7 +95,7 @@
   height: 100%;
   min-height: 0;
   padding: 0;
-  background-color: var(--bg-app);
+  background-color: transparent; /* Changed for glassy look */
   box-sizing: border-box;
   overflow: hidden;
 }

@@ -160,6 +160,26 @@
   border: 1px solid var(--risk-severe-border);
 }
 
+.dh-segment-inspect__badge--indeterminate {
+  background: rgba(100, 116, 139, 0.14);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.dh-segment-inspect__terrain-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.dh-segment-inspect__terrain-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
 .dh-segment-inspect__score-number-group {
   display: flex;
   align-items: baseline;
@@ -202,6 +222,45 @@
   margin-top: 4px;
 }
 
+/* Primary Hazard Driver Card */
+.dh-segment-inspect__driver-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dh-segment-inspect__driver-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dh-segment-inspect__driver-icon {
+  color: var(--accent-primary);
+}
+
+.dh-segment-inspect__driver-name {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dh-segment-inspect__driver-detail {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
 /* Factor Breakdown */
 .dh-segment-inspect__factors {
   display: flex;
@@ -237,6 +296,16 @@
   gap: 6px;
 }
 
+.dh-segment-inspect__factor-item--unavailable {
+  opacity: 0.65;
+  border-style: dashed;
+}
+
+.dh-segment-inspect__factor-item--future {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
 .dh-segment-inspect__factor-meta {
   display: flex;
   align-items: center;
@@ -254,12 +323,74 @@
 
 .dh-segment-inspect__factor-icon {
   color: var(--accent-primary);
+  display: flex;
+  align-items: center;
 }
 
-.dh-segment-inspect__factor-metric {
-  color: var(--text-secondary);
+.dh-segment-inspect__factor-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dh-segment-inspect__factor-badge--active {
+  background: var(--risk-low-bg);
+  color: var(--risk-low);
+  border: 1px solid var(--risk-low-border);
+}
+
+.dh-segment-inspect__factor-badge--unavailable {
+  background: rgba(229, 103, 95, 0.12);
+  color: var(--risk-severe);
+  border: 1px solid rgba(229, 103, 95, 0.3);
+}
+
+.dh-segment-inspect__factor-badge--future {
+  background: rgba(100, 116, 139, 0.14);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* 4-Column Factor Stats Grid */
+.dh-segment-inspect__factor-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 4px 0;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.dh-segment-inspect__stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dh-segment-inspect__stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dh-segment-inspect__stat-val {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dh-segment-inspect__stat-val--accent {
+  color: var(--accent-primary);
+}
+
+.dh-segment-inspect__stat-val--contrib {
+  color: var(--risk-moderate);
 }
 
 .dh-segment-inspect__factor-bar-bg {
@@ -272,12 +403,89 @@
 .dh-segment-inspect__factor-bar {
   height: 100%;
   border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
 }
 
 .dh-segment-inspect__factor-caption {
   font-size: 0.7rem;
   color: var(--text-muted);
-  line-height: 1.3;
+  line-height: 1.35;
+}
+
+/* Future Phase Factors Section */
+.dh-segment-inspect__future-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.dh-segment-inspect__future-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dh-segment-inspect__future-title {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Data Quality Audit Box */
+.dh-segment-inspect__quality-box {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dh-segment-inspect__quality-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+}
+
+.dh-segment-inspect__quality-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.dh-segment-inspect__quality-icon {
+  color: var(--accent-primary);
+}
+
+.dh-segment-inspect__quality-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.dh-segment-inspect__disclaimer-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.dh-segment-inspect__disclaimer-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-muted);
 }
 
 /* Advisory */

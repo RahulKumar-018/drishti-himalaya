@@ -8,6 +8,7 @@
   width: 100%;
   max-width: 1400px;
   margin-inline: auto;
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 68fr) minmax(340px, 32fr);
   gap: var(--space-4);
@@ -26,6 +27,8 @@
 }
 
 .dh-workspace__map-region {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -34,6 +37,8 @@
 }
 
 .dh-workspace__panel-region {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   height: 100%;

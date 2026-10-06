@@ -358,12 +358,16 @@ function MapViewController({
   destination,
   activeRoute,
   showCorridorRoute,
+  selectedSegmentId,
+  segments,
   fitTrigger,
 }: {
   origin?: LocationPoint | null;
   destination?: LocationPoint | null;
   activeRoute?: RouteResult | null;
   showCorridorRoute?: boolean;
+  selectedSegmentId?: string | null;
+  segments?: CorridorSegmentRisk[];
   fitTrigger?: number;
 }): null {
   const map = useMap();
@@ -396,13 +400,23 @@ function MapViewController({
   useEffect(() => {
     map.invalidateSize({ pan: false });
 
-    const targetKey = `${origin?.id ?? ''}_${origin?.latitude ?? ''}_${destination?.id ?? ''}_${destination?.latitude ?? ''}_${activeRoute?.status ?? ''}_${activeRoute?.geometry?.length ?? 0}_${showCorridorRoute ? 'corridor' : 'default'}_${fitTrigger ?? 0}`;
+    const targetKey = `${origin?.id ?? ''}_${origin?.latitude ?? ''}_${destination?.id ?? ''}_${destination?.latitude ?? ''}_${activeRoute?.status ?? ''}_${activeRoute?.geometry?.length ?? 0}_${showCorridorRoute ? 'corridor' : 'default'}_${selectedSegmentId ?? ''}_${fitTrigger ?? 0}`;
     if (targetKey === lastTargetKey.current) {
       return;
     }
     lastTargetKey.current = targetKey;
 
     try {
+      // Focus on specifically selected corridor segment if user clicked a hotspot/segment
+      if (selectedSegmentId && segments && segments.length > 0) {
+        const seg = segments.find((s) => s.id === selectedSegmentId);
+        if (seg && seg.coordinates.length > 0) {
+          const bounds = L.latLngBounds(seg.coordinates);
+          map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+          return;
+        }
+      }
+
       if (activeRoute && activeRoute.status === 'success' && activeRoute.geometry.length > 0) {
         const bounds = L.latLngBounds(
           activeRoute.bounds[0],
@@ -428,7 +442,7 @@ function MapViewController({
     } catch {
       // Safe fallback
     }
-  }, [map, origin, destination, activeRoute, showCorridorRoute, fitTrigger]);
+  }, [map, origin, destination, activeRoute, showCorridorRoute, selectedSegmentId, segments, fitTrigger]);
 
   return null;
 }
@@ -526,14 +540,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Layer toggle states
   const [showStations, setShowStations] = useState(true);
-  const [internalShowCorridor, setInternalShowCorridor] = useState(false);
+  const [internalShowCorridor, setInternalShowCorridor] = useState(true);
   const [showHistoricalCuttings, setShowHistoricalCuttings] = useState<boolean>(true);
   const [historicalCuttings, setHistoricalCuttings] = useState<HistoricalCuttingFeature[]>([]);
   const [cuttingsYear, setCuttingsYear] = useState<number>(2018);
   const [fitTrigger, setFitTrigger] = useState<number>(0);
 
+  // Calculate corridor segments fallback if enabled
+  const activeSegments =
+    segments && segments.length > 0
+      ? segments
+      : calculateCorridorSegmentRisks(null);
+
+  const hasSegmentData = Boolean(activeSegments && activeSegments.length > 0);
+
   const showCorridorRoute =
-    propShowCorridorRoute !== undefined ? propShowCorridorRoute : internalShowCorridor;
+    (propShowCorridorRoute !== undefined ? propShowCorridorRoute : internalShowCorridor) &&
+    hasSegmentData;
 
   const handleToggleRoute = () => {
     const nextVal = !showCorridorRoute;
@@ -598,14 +621,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     };
   }, []);
 
-  // Calculate corridor segments fallback if enabled
-  const activeSegments =
-    segments && segments.length > 0
-      ? segments
-      : calculateCorridorSegmentRisks(null);
 
   const isSelectionActive = Boolean(selectionMode);
-  const hasActiveRoadRoute = Boolean(activeRoute && activeRoute.status === 'success');
 
   const handleResetPerspective = () => {
     if (onResetRouteSelection) {
@@ -712,14 +729,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <button
           type="button"
           className={clsx('dh-interactive-map__tool-btn', {
-            'dh-interactive-map__tool-btn--active': showCorridorRoute || hasActiveRoadRoute,
+            'dh-interactive-map__tool-btn--active': showCorridorRoute,
           })}
           onClick={handleToggleRoute}
-          title="Toggle NH-7 pilot corridor segment risk analysis"
+          title="Toggle NH-7 corridor risk segments"
           aria-pressed={showCorridorRoute}
         >
           <Route size={11} aria-hidden="true" />
-          <span>Corridor</span>
+          <span>Corridor Risk</span>
         </button>
 
         {/* Layer: Historical OSM Road-Cutting Features (2018) */}
@@ -840,6 +857,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           activeRoute={activeRoute}
           showCorridorRoute={showCorridorRoute}
           fitTrigger={fitTrigger}
+          selectedSegmentId={selectedSegmentId}
+          segments={activeSegments}
         />
         <MapClickHandler selectionMode={selectionMode} onMapClick={onMapClick} />
 
@@ -1086,115 +1105,129 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
-        {/* ─── 3. CORRIDOR SEGMENT RISK ANALYSIS (Shown when corridor layer is requested) ─── */}
+        {/* ─── 3. CORRIDOR SEGMENT RISK ANALYSIS (Contextual risk layer along pilot corridor) ─── */}
         {showCorridorRoute &&
-          (!activeRoute || activeRoute.status !== 'success') &&
           activeSegments.map((segment) => {
             const isSelected = selectedSegmentId === segment.id;
+            const hasActiveRoute = Boolean(activeRoute && activeRoute.status === 'success');
             return (
-              <Polyline
-                key={segment.id}
-                positions={segment.coordinates}
-                pathOptions={{
-                  color: segment.colorHex,
-                  weight: isSelected ? 8 : 5,
-                  opacity: isSelected ? 1.0 : 0.9,
-                  lineCap: 'round',
-                  lineJoin: 'round',
-                }}
-                eventHandlers={{
-                  click: () => {
-                    onSelectSegment?.(segment);
-                  },
-                }}
-              >
-                <Tooltip sticky direction="top">
-                  <span style={{ fontFamily: 'monospace' }}>
-                    <strong>{segment.id}</strong>: {segment.name} | Risk {segment.riskScore.toFixed(1)}/100 ({segment.riskTier})
-                  </span>
-                </Tooltip>
-                <Popup maxWidth={300} className="dh-segment-popup">
-                  <div className="dh-popup-card dh-popup-card--segment">
-                    <div className="dh-popup-card__header">
-                      <span className="dh-popup-card__title">{segment.id}</span>
-                      <span
-                        className="dh-popup-card__badge"
-                        style={{
-                          color: segment.colorHex,
-                          backgroundColor: `${segment.colorHex}22`,
-                          borderColor: segment.colorHex,
-                          border: `1px solid ${segment.colorHex}`,
-                        }}
-                      >
-                        {segment.riskTier}
-                      </span>
-                    </div>
-
-                    <div className="dh-popup-card__route-name">{segment.name}</div>
-
-                    <div className="dh-popup-card__risk-metric">
-                      <span className="dh-popup-card__risk-label">Terrain Corridor Risk</span>
-                      <span
-                        className="dh-popup-card__risk-value"
-                        style={{ color: segment.colorHex }}
-                      >
-                        {segment.riskScore.toFixed(1)} / 100
-                      </span>
-                    </div>
-
-                    <div className="dh-popup-card__grid">
-                      <div className="dh-popup-card__grid-item">
-                        <span className="dh-popup-card__meta-k">Distance</span>
-                        <span className="dh-popup-card__meta-v">~{segment.distanceKm.toFixed(1)} km</span>
-                      </div>
-                      <div className="dh-popup-card__grid-item">
-                        <span className="dh-popup-card__meta-k">Terrain Gradient</span>
-                        <span className="dh-popup-card__meta-v">
-                          {segment.gradientDegrees.toFixed(1)}° ({segment.gradientPercent.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="dh-popup-card__grid-item">
-                        <span className="dh-popup-card__meta-k">Elevation</span>
-                        <span className="dh-popup-card__meta-v">
-                          {segment.startElevationM}m → {segment.endElevationM}m
-                        </span>
-                      </div>
-                      <div className="dh-popup-card__grid-item">
-                        <span className="dh-popup-card__meta-k">Primary Driver</span>
+              <React.Fragment key={segment.id}>
+                {/* Contrast casing highlight for selected segment */}
+                {isSelected && (
+                  <Polyline
+                    positions={segment.coordinates}
+                    pathOptions={{
+                      color: '#ffffff',
+                      weight: 12,
+                      opacity: 0.65,
+                      lineCap: 'round',
+                      lineJoin: 'round',
+                    }}
+                  />
+                )}
+                <Polyline
+                  positions={segment.coordinates}
+                  pathOptions={{
+                    color: segment.colorHex,
+                    weight: isSelected ? 9 : hasActiveRoute ? 4 : 5,
+                    opacity: isSelected ? 1.0 : hasActiveRoute ? 0.75 : 0.9,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                  eventHandlers={{
+                    click: () => {
+                      onSelectSegment?.(segment);
+                    },
+                  }}
+                >
+                  <Tooltip sticky direction="top">
+                    <span style={{ fontFamily: 'monospace' }}>
+                      <strong>{segment.id}</strong>: {segment.name} | Risk {segment.riskScore.toFixed(1)}/100 ({segment.riskTier})
+                    </span>
+                  </Tooltip>
+                  <Popup maxWidth={300} className="dh-segment-popup">
+                    <div className="dh-popup-card dh-popup-card--segment">
+                      <div className="dh-popup-card__header">
+                        <span className="dh-popup-card__title">{segment.id}</span>
                         <span
-                          className="dh-popup-card__meta-v dh-popup-card__meta-v--driver"
-                          title={segment.primaryDriver}
+                          className="dh-popup-card__badge"
+                          style={{
+                            color: segment.colorHex,
+                            backgroundColor: `${segment.colorHex}22`,
+                            borderColor: segment.colorHex,
+                            border: `1px solid ${segment.colorHex}`,
+                          }}
                         >
-                          {segment.primaryDriver}
+                          {segment.riskTier}
                         </span>
                       </div>
-                    </div>
 
-                    <div className="dh-popup-card__factors">
-                      <span className="dh-popup-card__factors-title">Factor Contributions</span>
-                      <div className="dh-popup-card__factors-list">
-                        {segment.factorContributions.map((fc) => (
-                          <div key={fc.id} className="dh-popup-card__factor-row">
-                            <span className="dh-popup-card__factor-name">{fc.name}</span>
-                            <span className="dh-popup-card__factor-score">
-                              {fc.contribution !== null ? `+${fc.contribution.toFixed(1)}` : '—'}
-                              <span className="dh-popup-card__factor-weight">({fc.weightPercent}%)</span>
-                            </span>
-                          </div>
-                        ))}
+                      <div className="dh-popup-card__route-name">{segment.name}</div>
+
+                      <div className="dh-popup-card__risk-metric">
+                        <span className="dh-popup-card__risk-label">Terrain Corridor Risk</span>
+                        <span
+                          className="dh-popup-card__risk-value"
+                          style={{ color: segment.colorHex }}
+                        >
+                          {segment.riskScore.toFixed(1)} / 100
+                        </span>
+                      </div>
+
+                      <div className="dh-popup-card__grid">
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Distance</span>
+                          <span className="dh-popup-card__meta-v">~{segment.distanceKm.toFixed(1)} km</span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Terrain Gradient</span>
+                          <span className="dh-popup-card__meta-v">
+                            {segment.gradientDegrees.toFixed(1)}° ({segment.gradientPercent.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Elevation</span>
+                          <span className="dh-popup-card__meta-v">
+                            {segment.startElevationM}m → {segment.endElevationM}m
+                          </span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Primary Driver</span>
+                          <span
+                            className="dh-popup-card__meta-v dh-popup-card__meta-v--driver"
+                            title={segment.primaryDriver}
+                          >
+                            {segment.primaryDriver}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="dh-popup-card__factors">
+                        <span className="dh-popup-card__factors-title">Factor Contributions</span>
+                        <div className="dh-popup-card__factors-list">
+                          {segment.factorContributions.map((fc) => (
+                            <div key={fc.id} className="dh-popup-card__factor-row">
+                              <span className="dh-popup-card__factor-name">{fc.name}</span>
+                              <span className="dh-popup-card__factor-score">
+                                {fc.contribution !== null ? `+${fc.contribution.toFixed(1)}` : '—'}
+                                <span className="dh-popup-card__factor-weight">({fc.weightPercent}%)</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="dh-popup-card__telemetry-scope">
+                        <span>Data Quality: {segment.activeFactorsRatio} ({segment.dataQualityRating})</span>
+                      </div>
+
+                      <div className="dh-popup-card__disclaimer">
+                        {segment.disclaimer}
                       </div>
                     </div>
-
-                    <div className="dh-popup-card__telemetry-scope">
-                      <span>Data Quality: {segment.activeFactorsRatio} ({segment.dataQualityRating})</span>
-                    </div>
-
-                    <div className="dh-popup-card__disclaimer">
-                      {segment.disclaimer}
-                    </div>
-                  </div>
-                </Popup>
-              </Polyline>
+                  </Popup>
+                </Polyline>
+              </React.Fragment>
             );
           })}
 

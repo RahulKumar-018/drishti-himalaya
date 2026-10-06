@@ -8,8 +8,11 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background-color: rgba(13, 17, 29, 0.4);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-sizing: border-box;
@@ -976,5 +979,407 @@
 
 .dh-analysis-panel__risk-caveat-box--sim .dh-analysis-panel__risk-caveat-icon {
   color: var(--accent-primary);
+}
+
+/* ==============================================================================
+   PHASE 6C.2: WHY THIS ASSESSMENT (EXECUTIVE RATIONALE)
+   ============================================================================== */
+
+.dh-analysis-panel__why-box {
+  background: linear-gradient(135deg, rgba(14, 22, 38, 0.95), rgba(20, 30, 50, 0.95));
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__why-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.dh-analysis-panel__why-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dh-analysis-panel__why-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__why-title {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__why-coverage-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-primary);
+  background-color: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.dh-analysis-panel__why-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-analysis-panel__why-current-assessment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.dh-analysis-panel__why-score-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  background-color: rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.02em;
+}
+
+.dh-analysis-panel__why-tier-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__why-status-text {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 160px;
+}
+
+.dh-analysis-panel__why-driver-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.dh-analysis-panel__why-driver-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.dh-analysis-panel__why-driver-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__why-driver-pts {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-left: auto;
+}
+
+.dh-analysis-panel__why-coverage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 2px 0;
+}
+
+.dh-analysis-panel__why-coverage-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__why-coverage-detail {
+  color: var(--text-secondary);
+}
+
+.dh-analysis-panel__why-contrib-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.dh-analysis-panel__why-contrib-label {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__why-contrib-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dh-analysis-panel__why-contrib-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+}
+
+.dh-analysis-panel__why-contrib-name {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__why-contrib-pts {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.dh-analysis-panel__why-contrib-wt {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__why-caveat {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.35;
+}
+
+/* ==============================================================================
+   PHASE 6C.3: HIGHER-RISK SEGMENTS / CORRIDOR HOTSPOTS
+   ============================================================================== */
+
+.dh-analysis-panel__hotspots-card {
+  position: relative;
+}
+
+.dh-analysis-panel__hotspots-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  background-color: var(--bg-surface-muted);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.dh-analysis-panel__hotspots-empty-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__hotspots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dh-analysis-panel__hotspot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dh-analysis-panel__hotspot-row:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-strong);
+  transform: translateX(2px);
+}
+
+.dh-analysis-panel__hotspot-row--highest {
+  border-left: 3px solid var(--risk-high);
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.06), transparent);
+}
+
+.dh-analysis-panel__hotspot-row--selected {
+  border-color: var(--accent-primary);
+  background-color: rgba(14, 165, 233, 0.08);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.dh-analysis-panel__hotspot-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dh-analysis-panel__hotspot-rank {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__hotspot-rank--top {
+  color: var(--risk-high);
+  border-color: rgba(249, 115, 22, 0.4);
+  background-color: rgba(249, 115, 22, 0.1);
+}
+
+.dh-analysis-panel__hotspot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dh-analysis-panel__hotspot-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dh-analysis-panel__hotspot-id {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dh-analysis-panel__hotspot-sector {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dh-analysis-panel__hotspot-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dh-analysis-panel__hotspot-driver {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__hotspot-driver strong {
+  color: var(--text-secondary);
+}
+
+.dh-analysis-panel__hotspot-geo {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__hotspot-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.dh-analysis-panel__hotspot-tier {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+}
+
+.dh-analysis-panel__hotspot-score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dh-analysis-panel__hotspot-score-denom {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.dh-analysis-panel__hotspots-hint {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2px 4px;
 }
 

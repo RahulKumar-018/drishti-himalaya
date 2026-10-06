@@ -38,7 +38,7 @@ export const RiskFactorCard: React.FC<RiskFactorCardProps> = ({ factor, classNam
     if (isFuture) {
       return (
         <span className="dh-factor-card__badge dh-factor-card__badge--future">
-          FUTURE ML INGESTION
+          FUTURE PHASE (UNASSESSED)
         </span>
       );
     }
@@ -110,7 +110,7 @@ export const RiskFactorCard: React.FC<RiskFactorCardProps> = ({ factor, classNam
             {isActive && factor.rawValue !== null
               ? `${factor.rawValue} ${factor.unit}`
               : isFuture
-              ? 'Pending ML Model'
+              ? 'Unassessed (Future Phase)'
               : 'No Signal'}
           </span>
         </div>

@@ -4,11 +4,11 @@
    ============================================================================== */
 
 :root {
-  /* Surface & Background Hierarchy (UXMagic Aligned) */
-  --bg-app: #0b1420;              /* Base canvas / map underlay */
-  --bg-surface: #101e2b;          /* Primary panels and containers */
-  --bg-surface-elevated: #152434; /* Floating cards, dropdowns, tooltips */
-  --bg-surface-muted: #101d2a;    /* Inset areas, data tables, metrics wells */
+  /* Surface & Background Hierarchy (Aurelia Inspired Glass) */
+  --bg-app: transparent;              /* Let the 3D scene show through */
+  --bg-surface: rgba(13, 17, 29, 0.4);          /* Primary panels and containers */
+  --bg-surface-elevated: rgba(20, 25, 40, 0.5); /* Floating cards, dropdowns, tooltips */
+  --bg-surface-muted: rgba(10, 14, 24, 0.3);    /* Inset areas, data tables, metrics wells */
   --bg-accent: #1d3344;           /* Active nav and emphasized highlight regions */
 
   /* Text & Content Tokens */
@@ -18,9 +18,9 @@
   --text-disabled: #3d5061;       /* Inactive controls, placeholder text */
 
   /* Border Tokens */
-  --border-subtle: rgba(42, 66, 81, 0.45); /* Division lines, subtle card edges */
-  --border-default: #2a4251;               /* Standard container outlines */
-  --border-strong: #3d5c70;                /* Focus states, emphasized borders */
+  --border-subtle: rgba(255, 255, 255, 0.05); /* Division lines, subtle card edges */
+  --border-default: rgba(255, 255, 255, 0.1);               /* Standard container outlines */
+  --border-strong: rgba(255, 255, 255, 0.2);                /* Focus states, emphasized borders */
 
   /* Primary Technical Accent (UXMagic Glacier Cyan) */
   --accent-primary: #64b7d8;

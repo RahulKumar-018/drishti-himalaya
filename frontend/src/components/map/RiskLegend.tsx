@@ -19,6 +19,7 @@ export const RiskLegend: React.FC<RiskLegendProps> = ({
     { key: 'MODERATE', label: 'MODERATE', range: '25 – 50', config: RISK_TIER_CONFIG.MODERATE },
     { key: 'HIGH', label: 'HIGH', range: '50 – 75', config: RISK_TIER_CONFIG.HIGH },
     { key: 'SEVERE', label: 'SEVERE', range: '≥ 75', config: RISK_TIER_CONFIG.SEVERE },
+    { key: 'INDETERMINATE', label: 'INDETERMINATE', range: 'No Signal', config: RISK_TIER_CONFIG.INDETERMINATE },
   ] as const;
 
   return (

@@ -11,6 +11,7 @@ import {
   Activity,
   AlertCircle,
   ShieldAlert,
+  HelpCircle,
 } from 'lucide-react';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
@@ -120,6 +121,60 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   const liveScore = riskAssessment.score ?? 0;
   const scenarioScore = evaluatedScenarioRisk.score ?? 0;
   const scoreDelta = Math.round((scenarioScore - liveScore) * 10) / 10;
+
+  // Top active factor contributors for "Why this assessment?" executive rationale (Phase 6C.2)
+  const topActiveContributors = React.useMemo(() => {
+    if (!riskAssessment?.factors) return [];
+    return riskAssessment.factors
+      .filter((f) => f.status === 'active' && f.weightedContribution !== null && f.weightedContribution > 0)
+      .sort((a, b) => (b.weightedContribution ?? 0) - (a.weightedContribution ?? 0))
+      .slice(0, 3);
+  }, [riskAssessment]);
+
+  // Authoritative coverage derivation for executive assessment rationale (Phase 6C.2)
+  const { coverageBadgeText, coverageDetailText } = React.useMemo(() => {
+    const activeCount = riskAssessment?.dataQuality?.activeFactorsCount ?? 0;
+    const unavailableCount = riskAssessment?.dataQuality?.unavailableFactorsCount ?? 0;
+    const unavailableFactors = (riskAssessment?.factors ?? []).filter(
+      (f) => f.status === 'unavailable'
+    );
+
+    if (unavailableCount > 0 && unavailableFactors.length > 0) {
+      const missingNames = unavailableFactors
+        .map((f) => {
+          if (f.id === 'terrain_slope_gradient') return 'terrain unavailable';
+          if (f.id === 'orographic_elevation') return 'elevation unavailable';
+          if (f.id === 'precipitation_intensity') return 'rain intensity unavailable';
+          if (f.id === 'rainfall_accumulation_24h') return '24h rainfall unavailable';
+          if (f.id === 'precipitation_probability') return 'rain probability unavailable';
+          return `${f.name.toLowerCase()} unavailable`;
+        })
+        .join(', ');
+      return {
+        coverageBadgeText: `${activeCount} active factors • ${missingNames}`,
+        coverageDetailText: `${activeCount} active factors evaluated with dynamic weight normalization (${missingNames}).`,
+      };
+    }
+
+    return {
+      coverageBadgeText: `${activeCount} active factors`,
+      coverageDetailText: `Full assessment coverage across all ${activeCount} active hydro-meteorological and hypsometric factors.`,
+    };
+  }, [riskAssessment]);
+
+  // Derive ranked higher-risk segments (Hotspots) from authoritative corridor segments (Phase 6C.3)
+  const rankedHotspots = React.useMemo(() => {
+    if (!segments || segments.length === 0) return [];
+    return segments
+      .filter(
+        (seg) =>
+          typeof seg.riskScore === 'number' &&
+          !isNaN(seg.riskScore) &&
+          seg.riskTier !== 'INDETERMINATE'
+      )
+      .sort((a, b) => b.riskScore - a.riskScore)
+      .slice(0, 5);
+  }, [segments]);
 
   // Route Alternatives Selection State (Phase 1 & UXMagic Frame 3)
   const [selectedRouteId, setSelectedRouteId] = useState<string>('direct-corridor');
@@ -296,6 +351,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           <SegmentInspection
             segment={selectedSegment}
             onClose={() => onSelectSegment?.(null)}
+            onFocusMap={(seg) => onSelectSegment?.(seg)}
           />
         )}
 
@@ -476,35 +532,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           ) : null}
         </Card>
 
-        {/* Section 2: Route Analysis & Comparison HUD (UXMagic Frame 3) */}
-        <Card
-          variant="default"
-          title="Route Alternatives & Exposure"
-          subtitle="Multi-objective route exposure comparison (Time vs. Hazard)"
-          headerAction={
-            <Badge variant={primaryScore < 50 ? 'low' : 'moderate'} size="sm" showDot>
-              {isCustomRoute ? 'CUSTOM ROUTE ACTIVE' : 'PILOT CORRIDOR'}
-            </Badge>
-          }
-          className="dh-analysis-panel__card"
-        >
-          <RouteComparisonHUD
-            routes={evaluatedRouteOptions}
-            selectedRouteId={selectedRouteId}
-            onSelectRoute={(id) => setSelectedRouteId(id)}
-          />
-
-          <Divider orientation="horizontal" variant="subtle" />
-
-          <DecisionRationale
-            title="Alternative Route Rationale"
-            comparisonRouteName="Lower-Exposure Route"
-            referenceRouteName="Direct Corridor"
-            factors={comparativeFactors}
-          />
-        </Card>
-
-        {/* Section 3: Hydro-Meteorological Risk (Phase 4 Foundation) */}
+        {/* Section 2: Hydro-Meteorological Risk (Phase 4 Foundation & Phase 6C.2) */}
         <Card
           variant="default"
           title="Hydro-Meteorological Risk"
@@ -554,7 +582,95 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </div>
             </div>
 
-            {/* 2. Primary Contributing Factor Callout */}
+            {/* 2. WHY THIS ASSESSMENT? (Phase 6C.2 Executive Rationale) */}
+            <div className="dh-analysis-panel__why-box" role="region" aria-label="Why this assessment rationale">
+              <div className="dh-analysis-panel__why-header">
+                <div className="dh-analysis-panel__why-header-left">
+                  <HelpCircle size={14} className="dh-analysis-panel__why-icon" aria-hidden="true" />
+                  <span className="dh-analysis-panel__why-title">Why this assessment?</span>
+                </div>
+                <span className="dh-analysis-panel__why-coverage-badge">
+                  {coverageBadgeText}
+                </span>
+              </div>
+
+              <div className="dh-analysis-panel__why-body">
+                {/* 1. Current assessment */}
+                <div className="dh-analysis-panel__why-current-assessment">
+                  <span
+                    className="dh-analysis-panel__why-score-pill"
+                    style={{ color: riskAssessment.colorHex, borderColor: riskAssessment.colorHex }}
+                  >
+                    {riskAssessment.score !== null ? `${riskAssessment.score.toFixed(1)} / 100` : '—'}
+                  </span>
+                  <span
+                    className="dh-analysis-panel__why-tier-tag"
+                    style={{ color: riskAssessment.colorHex }}
+                  >
+                    {riskAssessment.level !== 'INDETERMINATE' ? `${riskAssessment.level} EXPOSURE` : 'INDETERMINATE'}
+                  </span>
+                  <span className="dh-analysis-panel__why-status-text">
+                    {riskAssessment.level === 'LOW' && 'Current environmental conditions evaluate to low baseline exposure.'}
+                    {riskAssessment.level === 'MODERATE' && 'Elevated hydro-meteorological telemetry observed along corridor.'}
+                    {riskAssessment.level === 'HIGH' && 'Significant hazard exposure from active weather and terrain factors.'}
+                    {riskAssessment.level === 'SEVERE' && 'Critical hazard exposure from acute rainfall or slope gradients.'}
+                    {riskAssessment.level === 'INDETERMINATE' && 'Telemetry insufficient or offline for reliable evaluation.'}
+                  </span>
+                </div>
+
+                {/* 2. Primary driver */}
+                <div className="dh-analysis-panel__why-driver-row">
+                  <span className="dh-analysis-panel__why-driver-label">Primary driver:</span>
+                  <span className="dh-analysis-panel__why-driver-name">
+                    {riskAssessment.primaryFactor && (riskAssessment.score || 0) > 0
+                      ? riskAssessment.primaryFactor.name
+                      : riskAssessment.level === 'INDETERMINATE'
+                      ? 'Indeterminate Telemetry'
+                      : 'Baseline Calm Conditions'}
+                  </span>
+                  {riskAssessment.primaryFactor && (riskAssessment.score || 0) > 0 && riskAssessment.primaryFactor.weightedContribution !== null && (
+                    <span className="dh-analysis-panel__why-driver-pts">
+                      +{riskAssessment.primaryFactor.weightedContribution.toFixed(1)} pts ({(riskAssessment.primaryFactor.normalizedWeight * 100).toFixed(0)}% active weight)
+                    </span>
+                  )}
+                </div>
+
+                {/* 3. Contribution explanation (Strongest active contributors) */}
+                {topActiveContributors.length > 0 && (
+                  <div className="dh-analysis-panel__why-contrib-group">
+                    <span className="dh-analysis-panel__why-contrib-label">Strongest active contributors:</span>
+                    <div className="dh-analysis-panel__why-contrib-list">
+                      {topActiveContributors.map((c) => (
+                        <div key={c.id} className="dh-analysis-panel__why-contrib-item">
+                          <span className="dh-analysis-panel__why-contrib-name">{c.name}</span>
+                          <span className="dh-analysis-panel__why-contrib-pts">
+                            +{c.weightedContribution !== null ? c.weightedContribution.toFixed(1) : '0.0'} pts
+                          </span>
+                          <span className="dh-analysis-panel__why-contrib-wt">
+                            ({Math.round(c.normalizedWeight * 100)}% wt)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Assessment coverage */}
+                <div className="dh-analysis-panel__why-coverage-row">
+                  <span className="dh-analysis-panel__why-coverage-label">Assessment coverage:</span>
+                  <span className="dh-analysis-panel__why-coverage-detail">
+                    {coverageDetailText}
+                  </span>
+                </div>
+
+                {/* 5. Authoritative Caveat / Narrative */}
+                <div className="dh-analysis-panel__why-caveat">
+                  {riskAssessment.summaryExplanation || 'Decision-support assessment based on available environmental telemetry.'}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Primary Contributing Factor Callout */}
             <div className="dh-analysis-panel__risk-driver-box">
               <div className="dh-analysis-panel__risk-driver-header">
                 <Activity size={12} className="dh-analysis-panel__risk-driver-icon" aria-hidden="true" />
@@ -574,7 +690,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
             <Divider orientation="horizontal" variant="subtle" />
 
-            {/* 3. Factor Attribution Breakdown */}
+            {/* 4. Factor Attribution Breakdown */}
             <div className="dh-analysis-panel__factors-section">
               <span className="dh-analysis-panel__factors-title">Factor Attribution Breakdown</span>
               <div className="dh-analysis-panel__factors-list">
@@ -597,7 +713,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                             'dh-analysis-panel__factor-status-badge--future': isFuture,
                           })}
                         >
-                          {isActive ? 'ACTIVE' : isFuture ? (factor.id === 'scar_proximity' ? 'PHASE 7' : 'UNASSESSED') : 'UNAVAILABLE'}
+                          {isActive ? 'ACTIVE' : isFuture ? 'UNASSESSED' : 'UNAVAILABLE'}
                         </span>
                       </div>
                       <div className="dh-analysis-panel__factor-metrics">
@@ -625,7 +741,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
             <Divider orientation="horizontal" variant="subtle" />
 
-            {/* 4. Telemetry Quality Audit */}
+            {/* 5. Telemetry Quality Audit */}
             <div className="dh-analysis-panel__risk-quality-row">
               <span className="dh-analysis-panel__risk-quality-label">
                 <ShieldAlert size={11} className="dh-analysis-panel__meta-icon" aria-hidden="true" />
@@ -646,7 +762,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </span>
             </div>
 
-            {/* 5. Scientific Limitation Caveat Box */}
+            {/* 6. Scientific Limitation Caveat Box */}
             <div className="dh-analysis-panel__risk-caveat-box" role="note">
               <AlertCircle size={14} className="dh-analysis-panel__risk-caveat-icon" aria-hidden="true" />
               <p className="dh-analysis-panel__risk-caveat-text">
@@ -654,6 +770,116 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
               </p>
             </div>
           </div>
+        </Card>
+
+        {/* Section 3: Higher-Risk Segments / Corridor Hotspots (Phase 6C.3) */}
+        <Card
+          variant="default"
+          title="Higher-Risk Segments"
+          subtitle="Corridor sectors ranked by deterministic hazard exposure"
+          headerAction={
+            rankedHotspots.length > 0 ? (
+              <Badge variant="moderate" size="sm" showDot>
+                TOP {rankedHotspots.length} HOTSPOTS
+              </Badge>
+            ) : null
+          }
+          className="dh-analysis-panel__card dh-analysis-panel__hotspots-card"
+        >
+          {rankedHotspots.length === 0 ? (
+            <div className="dh-analysis-panel__hotspots-empty">
+              <AlertCircle size={14} className="dh-analysis-panel__hotspots-empty-icon" aria-hidden="true" />
+              <span>No ranked higher-risk segments available from current telemetry.</span>
+            </div>
+          ) : (
+            <div className="dh-analysis-panel__hotspots-list" role="list" aria-label="Ranked higher-risk corridor segments">
+              {rankedHotspots.map((hotspot, idx) => {
+                const isSelected = selectedSegmentId === hotspot.id;
+                const isHighest = idx === 0;
+
+                return (
+                  <button
+                    key={hotspot.id}
+                    type="button"
+                    className={clsx('dh-analysis-panel__hotspot-row', {
+                      'dh-analysis-panel__hotspot-row--selected': isSelected,
+                      'dh-analysis-panel__hotspot-row--highest': isHighest,
+                    })}
+                    onClick={() => onSelectSegment?.(hotspot)}
+                    aria-label={`Select ${hotspot.id} ${hotspot.name}, risk score ${hotspot.riskScore.toFixed(1)} out of 100, ${hotspot.riskTier} exposure`}
+                  >
+                    <div className="dh-analysis-panel__hotspot-left">
+                      <span className={clsx('dh-analysis-panel__hotspot-rank', { 'dh-analysis-panel__hotspot-rank--top': isHighest })}>
+                        #{idx + 1}
+                      </span>
+                      <div className="dh-analysis-panel__hotspot-info">
+                        <div className="dh-analysis-panel__hotspot-title-row">
+                          <span className="dh-analysis-panel__hotspot-id">{hotspot.id}</span>
+                          <span className="dh-analysis-panel__hotspot-sector">{hotspot.name}</span>
+                        </div>
+                        <div className="dh-analysis-panel__hotspot-meta">
+                          <span className="dh-analysis-panel__hotspot-driver">
+                            Primary driver: <strong>{hotspot.primaryDriver}</strong>
+                          </span>
+                          <span className="dh-analysis-panel__hotspot-geo">
+                            ~{hotspot.distanceKm.toFixed(1)} km · {hotspot.gradientDegrees.toFixed(1)}° DEM gradient
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="dh-analysis-panel__hotspot-right">
+                      <span
+                        className="dh-analysis-panel__hotspot-tier"
+                        style={{
+                          color: hotspot.colorHex,
+                          backgroundColor: `${hotspot.colorHex}18`,
+                          borderColor: hotspot.colorHex,
+                        }}
+                      >
+                        {hotspot.riskTier}
+                      </span>
+                      <span className="dh-analysis-panel__hotspot-score" style={{ color: hotspot.colorHex }}>
+                        {hotspot.riskScore.toFixed(1)}
+                        <span className="dh-analysis-panel__hotspot-score-denom">/100</span>
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+              <div className="dh-analysis-panel__hotspots-hint">
+                Click any higher-risk segment to focus on map and inspect active factors.
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Section 4: Route Alternatives & Exposure (UXMagic Frame 3) */}
+        <Card
+          variant="default"
+          title="Route Alternatives & Exposure"
+          subtitle="Multi-objective route exposure comparison (Time vs. Hazard)"
+          headerAction={
+            <Badge variant={primaryScore < 50 ? 'low' : 'moderate'} size="sm" showDot>
+              {isCustomRoute ? 'CUSTOM ROUTE ACTIVE' : 'PILOT CORRIDOR'}
+            </Badge>
+          }
+          className="dh-analysis-panel__card"
+        >
+          <RouteComparisonHUD
+            routes={evaluatedRouteOptions}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={(id) => setSelectedRouteId(id)}
+          />
+
+          <Divider orientation="horizontal" variant="subtle" />
+
+          <DecisionRationale
+            title="Alternative Route Rationale"
+            comparisonRouteName="Lower-Exposure Route"
+            referenceRouteName="Direct Corridor"
+            factors={comparativeFactors}
+          />
         </Card>
 
         {/* Section 3: What-If Rainfall Scenario Simulation (Phase 6) */}
