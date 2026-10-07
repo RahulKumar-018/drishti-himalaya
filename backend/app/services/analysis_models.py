@@ -77,12 +77,14 @@ class AnalysisSegmentResult(BaseModel):
             "elevation_m": round(self.elevation_m, 1) if self.elevation_m is not None else None,
             "slope_degrees": round(self.slope_degrees, 2) if self.slope_degrees is not None else None,
             "p24_mm": round(self.p24_mm, 2) if self.p24_mm is not None else None,
+            "precipitation_24h_mm": round(self.p24_mm, 2) if self.p24_mm is not None else None,
             "p72_mm": round(self.p72_mm, 2) if self.p72_mm is not None else None,
             "ari_mm": round(self.ari_mm, 2) if self.ari_mm is not None else None,
             "distance_to_historic_scar_m": round(self.distance_to_historic_scar_m, 2),
             "scar_density_1km": self.scar_density_1km,
             "is_cut_slope": self.is_cut_slope,
             "is_risk_complete": self.is_risk_complete,
+            "missing_features": list(self.missing_features),
         }
         if self.risk_result is not None:
             props["segment_risk_score"] = self.risk_result.risk_score

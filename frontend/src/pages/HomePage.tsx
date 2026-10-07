@@ -14,8 +14,6 @@ import {
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { MapViewport } from '../components/workspace/MapViewport';
-import { AlertCard } from '../components/alerts/AlertCard';
-import { DEMO_ALERTS } from '../components/alerts/AlertFeed';
 import { RiskAssessment } from '../services/risk/types';
 import { EnvironmentalData } from '../services/environmental/types';
 import { CorridorSegmentRisk } from '../services/risk/segmentRiskService';
@@ -392,47 +390,11 @@ export const HomePage: React.FC<HomePageProps> = ({
             <button
               type="button"
               className="dh-home-pillar-card__link"
-              onClick={() => onNavigate('alerts')}
+              onClick={() => onNavigate('dashboard')}
             >
-              <span>View Active Alerts</span>
+              <span>Inspect Corridor Overview</span>
               <ChevronRight size={14} />
             </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 5. ACTIVE EARLY WARNING ADVISORIES PREVIEW ──────────────────── */}
-      <section className="dh-home-alerts-preview">
-        <div className="dh-home-section__header">
-          <span className="dh-home-section__eyebrow">FIELD EARLY WARNINGS</span>
-          <h2 className="dh-home-section__title">
-            Active Civil Protection &amp; Hazard Bulletins
-          </h2>
-          <p className="dh-home-section__desc">
-            Continuous operational advisories generated from monitored slope sensors and rainfall surge criteria.
-          </p>
-        </div>
-
-        <div className="dh-home-alerts-container">
-          <div className="dh-home-alerts-grid">
-            {DEMO_ALERTS.slice(0, 2).map((alert) => (
-              <AlertCard
-                key={alert.id}
-                alert={alert}
-                onLocateOnMap={(a) => onNavigate('map', { targetAlert: a })}
-              />
-            ))}
-          </div>
-
-          <div className="dh-home-alerts-cta-row">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => onNavigate('alerts')}
-              trailingIcon={<ArrowRight size={14} />}
-            >
-              View All 5 Active Bulletins
-            </Button>
           </div>
         </div>
       </section>

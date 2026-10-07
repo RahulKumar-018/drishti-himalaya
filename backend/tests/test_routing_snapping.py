@@ -358,13 +358,16 @@ class TestRoadSnappingRetryLogic:
         mock_provider = ORSRoutingProvider(api_key="mock-key", http_client=mock_client)
 
         from backend.app.routing.service import RoutingService
+        from backend.app.services.weather_service import WeatherService
         custom_routing = RoutingService(provider=mock_provider)
+        weather_svc = WeatherService(data_mode="DEMO")
 
         result = analyze_route(
             origin=req_origin,
             destination=req_dest,
             routing_service=custom_routing,
-            data_mode="LIVE",
+            weather_service=weather_svc,
+            data_mode="DEMO",
         )
 
         assert len(result.routes) == 1

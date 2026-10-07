@@ -5,7 +5,6 @@ import {
   DashboardPage,
   MapWorkspacePage,
   RiskAnalysisPage,
-  AlertsPage,
   AboutPage,
 } from './pages';
 import { useEnvironmentalData, useRiskAssessment, useLocationSelection } from './hooks';
@@ -15,7 +14,6 @@ import {
   CorridorSegmentRisk,
 } from './services/risk';
 import { CorridorSector } from './components/dashboard/AffectedAreasTable';
-import { HazardAlert } from './components/alerts/AlertCard';
 import './App.css';
 
 export default function App(): React.JSX.Element {
@@ -63,7 +61,26 @@ export default function App(): React.JSX.Element {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (context && typeof context === 'object') {
-      const ctx = context as { targetSector?: CorridorSector; targetAlert?: HazardAlert };
+      const ctx = context as {
+        targetSector?: CorridorSector;
+        targetAlert?: any;
+        targetSegmentIndex?: number;
+        targetSegmentId?: string;
+      };
+
+      // Select corridor segment for inspection HUD
+      if (ctx.targetSegmentIndex !== undefined || ctx.targetSegmentId) {
+        const match = segments.find(
+          (s) =>
+            s.index === ctx.targetSegmentIndex ||
+            s.id.toLowerCase() === ctx.targetSegmentId?.toLowerCase() ||
+            (ctx.targetSegmentIndex !== undefined && s.id.toLowerCase().includes(`segment ${ctx.targetSegmentIndex}`))
+        );
+        if (match) {
+          setSelectedSegment(match);
+        }
+      }
+
       if (ctx.targetSector) {
         locationSelection.setDestination({
           id: ctx.targetSector.id,
@@ -76,10 +93,10 @@ export default function App(): React.JSX.Element {
           source: 'curated',
           elevationM: ctx.targetSector.elevationM,
         });
-      } else if (ctx.targetAlert) {
+      } else if (ctx.targetAlert && ctx.targetAlert.coordinates) {
         locationSelection.setDestination({
           id: ctx.targetAlert.id,
-          name: ctx.targetAlert.location,
+          name: ctx.targetAlert.location || ctx.targetAlert.title,
           latitude: ctx.targetAlert.coordinates[0],
           longitude: ctx.targetAlert.coordinates[1],
           state: 'Uttarakhand',
@@ -155,10 +172,6 @@ export default function App(): React.JSX.Element {
           scenarioPrecipitation={scenarioPrecipitation}
           onScenarioChange={setScenarioPrecipitation}
         />
-      )}
-
-      {activeTab === 'alerts' && (
-        <AlertsPage onNavigate={handleNavigate} />
       )}
 
       {activeTab === 'about' && (

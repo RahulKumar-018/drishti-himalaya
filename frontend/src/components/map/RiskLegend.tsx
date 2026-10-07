@@ -15,19 +15,20 @@ export const RiskLegend: React.FC<RiskLegendProps> = ({
   showHistoricalCuttings = true,
 }) => {
   const tiers = [
-    { key: 'LOW', label: 'LOW', range: '< 25', config: RISK_TIER_CONFIG.LOW },
-    { key: 'MODERATE', label: 'MODERATE', range: '25 – 50', config: RISK_TIER_CONFIG.MODERATE },
-    { key: 'HIGH', label: 'HIGH', range: '50 – 75', config: RISK_TIER_CONFIG.HIGH },
-    { key: 'SEVERE', label: 'SEVERE', range: '≥ 75', config: RISK_TIER_CONFIG.SEVERE },
+    { key: 'LOW', label: 'LOW', range: '< 25', colorHex: RISK_TIER_CONFIG.LOW.colorHex },
+    { key: 'MODERATE', label: 'MODERATE', range: '25 – 50', colorHex: RISK_TIER_CONFIG.MODERATE.colorHex },
+    { key: 'HIGH', label: 'HIGH', range: '50 – 75', colorHex: RISK_TIER_CONFIG.HIGH.colorHex },
+    { key: 'SEVERE', label: 'SEVERE', range: '≥ 75', colorHex: RISK_TIER_CONFIG.SEVERE.colorHex },
+    { key: 'INDETERMINATE', label: 'UNKNOWN / INDETERMINATE', range: 'Partial / Missing', colorHex: '#94A3B8' },
   ] as const;
 
   return (
     <aside
       className={clsx('dh-risk-legend', className)}
-      aria-label="Corridor Risk Legend"
+      aria-label="Route and Corridor Risk Legend"
     >
       <div className="dh-risk-legend__header">
-        <span className="dh-risk-legend__title">CORRIDOR RISK</span>
+        <span className="dh-risk-legend__title">ROUTE RISK</span>
         {isSimulated && (
           <span className="dh-risk-legend__sim-tag">SCENARIO</span>
         )}
@@ -38,7 +39,7 @@ export const RiskLegend: React.FC<RiskLegendProps> = ({
           <li key={t.key} className="dh-risk-legend__item">
             <span
               className="dh-risk-legend__swatch"
-              style={{ backgroundColor: t.config.colorHex }}
+              style={{ backgroundColor: t.colorHex }}
               aria-hidden="true"
             />
             <span className="dh-risk-legend__label">{t.label}</span>

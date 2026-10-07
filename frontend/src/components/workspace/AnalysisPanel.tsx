@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import clsx from 'clsx';
 import {
   CloudRain,
@@ -20,6 +20,7 @@ import { RouteSetupPanel } from '../route/RouteSetupPanel';
 import { RouteComparisonHUD, RouteOption, DecisionRationale, RationaleFactor } from '../route';
 import { SegmentInspection } from './SegmentInspection';
 import { CorridorSegmentRisk } from '../../services/risk/segmentRiskService';
+import { convertBackendFeatureToSegmentRisk } from '../../services/routing/segmentAdapter';
 import { useEnvironmentalData, useRiskAssessment } from '../../hooks';
 import { useLocationSelection, UseLocationSelectionReturn } from '../../hooks/useLocationSelection';
 import { EnvironmentalData } from '../../services/environmental/types';
@@ -65,15 +66,26 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   selectedSegmentId,
   onSelectSegment,
 }) => {
-  // Derive selected segment for detailed inspection
-  const selectedSegment =
-    segments && selectedSegmentId
-      ? segments.find((s) => s.id === selectedSegmentId) ?? null
-      : null;
-
   // Fallback to internal hook if locationSelection is not supplied
   const internalLocationSelection = useLocationSelection();
   const locationSelection = propLocationSelection ?? internalLocationSelection;
+
+  // Derive selected segment for detailed inspection across backend features and baseline segments
+  const selectedSegment = useMemo(() => {
+    if (!selectedSegmentId) return null;
+    if (locationSelection?.activeRoute?.analyzedRoute?.geojson?.features) {
+      const match = locationSelection.activeRoute.analyzedRoute.geojson.features.find(
+        (f) =>
+          f.id === selectedSegmentId ||
+          `seg_${f.properties.segment_index}` === selectedSegmentId ||
+          String(f.properties.segment_index) === selectedSegmentId
+      );
+      if (match) {
+        return convertBackendFeatureToSegmentRisk(match);
+      }
+    }
+    return segments ? segments.find((s) => s.id === selectedSegmentId) ?? null : null;
+  }, [selectedSegmentId, locationSelection?.activeRoute, segments]);
 
   // Fallback to internal hook if props are not supplied by Workspace container
   const hookEnv = useEnvironmentalData({ autoFetch: propEnvData === undefined });
@@ -908,6 +920,46 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
                   {locationSelection.activeRoute.metrics.elevationCoverageRatio || 'Unavailable'}
                 </span>
               </div>
+              {locationSelection.activeRoute.analyzedRoute && (
+                <>
+                  <Divider orientation="horizontal" variant="subtle" />
+                  <div className="dh-analysis-panel__metric-row">
+                    <span className="dh-analysis-panel__metric-label">Composite Route Risk</span>
+                    <span className="dh-analysis-panel__metric-value" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
+                      {locationSelection.activeRoute.analyzedRoute.composite_route_risk !== null && locationSelection.activeRoute.analyzedRoute.composite_route_risk !== undefined
+                        ? `${locationSelection.activeRoute.analyzedRoute.composite_route_risk.toFixed(1)} / 100`
+                        : 'Partial'}
+                    </span>
+                  </div>
+                  <Divider orientation="horizontal" variant="subtle" />
+                  <div className="dh-analysis-panel__metric-row">
+                    <span className="dh-analysis-panel__metric-label">Max Bottleneck Risk</span>
+                    <span className="dh-analysis-panel__metric-value" style={{ color: 'var(--risk-severe)', fontWeight: 600 }}>
+                      {locationSelection.activeRoute.analyzedRoute.max_bottleneck_risk !== null && locationSelection.activeRoute.analyzedRoute.max_bottleneck_risk !== undefined
+                        ? `${locationSelection.activeRoute.analyzedRoute.max_bottleneck_risk.toFixed(1)} / 100`
+                        : '—'}
+                    </span>
+                  </div>
+                  <Divider orientation="horizontal" variant="subtle" />
+                  <div className="dh-analysis-panel__metric-row">
+                    <span className="dh-analysis-panel__metric-label">Hazard Segments</span>
+                    <span className="dh-analysis-panel__metric-value">
+                      {locationSelection.activeRoute.analyzedRoute.high_risk_segment_count} High · {locationSelection.activeRoute.analyzedRoute.severe_risk_segment_count} Severe
+                    </span>
+                  </div>
+                  {locationSelection.activeRoute.analyzedRoute.advisory_text && (
+                    <>
+                      <Divider orientation="horizontal" variant="subtle" />
+                      <div className="dh-analysis-panel__risk-caveat-box" style={{ marginTop: '8px' }}>
+                        <AlertCircle size={13} className="dh-analysis-panel__risk-caveat-icon" aria-hidden="true" />
+                        <p className="dh-analysis-panel__risk-caveat-text">
+                          {locationSelection.activeRoute.analyzedRoute.advisory_text}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </Card>
         ) : (

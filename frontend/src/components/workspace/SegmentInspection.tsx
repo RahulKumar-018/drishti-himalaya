@@ -12,10 +12,11 @@ import {
   Crosshair,
 } from 'lucide-react';
 import { CorridorSegmentRisk } from '../../services/risk/segmentRiskService';
+import { RouteSegmentProperties } from '../../services/api/types';
 import './SegmentInspection.css';
 
 export interface SegmentInspectionProps {
-  segment: CorridorSegmentRisk | null;
+  segment: (CorridorSegmentRisk & { backendProperties?: RouteSegmentProperties }) | null;
   onClose?: () => void;
   onFocusMap?: (segment: CorridorSegmentRisk) => void;
   onCompareAlternatives?: () => void;
@@ -46,6 +47,7 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
   const isSevere = score >= 75;
   const isHigh = score >= 50 && score < 75;
   const isModerate = score >= 25 && score < 50;
+  const isIndeterminate = segment.riskTier === 'INDETERMINATE';
 
   const tierBadgeClass = isSevere
     ? 'dh-segment-inspect__badge--severe'
@@ -53,19 +55,37 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
     ? 'dh-segment-inspect__badge--high'
     : isModerate
     ? 'dh-segment-inspect__badge--moderate'
+    : isIndeterminate
+    ? 'dh-segment-inspect__badge--indeterminate'
     : 'dh-segment-inspect__badge--low';
 
-  // Deterministic 4-Factor Model Weights (UXMagic & Mathematical Blueprint Spec)
-  // Slope: 35%, Rainfall: 30%, Landslide Scar Proximity: 20%, Road Geometry: 15%
-  const rainfallFactor = segment.riskAssessment.factors.find(
-    (f) => f.id === 'precipitation_intensity' || f.id === 'rainfall_accumulation_24h'
-  );
-  const rainfallRateMm = rainfallFactor?.rawValue ?? 0;
-  const gradientScore = Math.min(100, Math.round((segment.gradientDegrees / 30) * 100));
+  const bp = segment.backendProperties;
+
+  // Real backend metrics or fallback baseline
+  const rainfallRateMm =
+    bp?.precipitation_24h_mm ??
+    bp?.p24_mm ??
+    segment.riskAssessment.factors.find(
+      (f) => f.id === 'precipitation_intensity' || f.id === 'rainfall_accumulation_24h'
+    )?.rawValue ??
+    0;
+
+  const gradientScore = bp
+    ? Math.min(100, Math.round(((bp.slope_degrees ?? segment.gradientDegrees) / 35) * 100))
+    : Math.min(100, Math.round((segment.gradientDegrees / 30) * 100));
+
   const rainfallScore = Math.min(100, Math.round((rainfallRateMm / 75) * 100));
-  // In demo/deterministic baseline: historical scar and geometry use baseline normalized indices
-  const scarScore = Math.min(100, Math.round((score * 0.85) + 10));
-  const geometryScore = Math.min(100, Math.round((segment.gradientDegrees > 15 ? 70 : 40)));
+  const scarScore = bp
+    ? Math.min(100, Math.round((Math.max(0, 2000 - (bp.distance_to_historic_scar_m ?? 2000)) / 2000) * 100))
+    : Math.min(100, Math.round((score * 0.85) + 10));
+
+  const geometryScore = bp
+    ? bp.is_cut_slope === true
+      ? 100
+      : bp.is_cut_slope === false
+      ? 20
+      : 50
+    : Math.min(100, Math.round(segment.gradientDegrees > 15 ? 70 : 40));
 
   return (
     <div
@@ -92,7 +112,9 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
           <h3 className="dh-segment-inspect__title">{segment.name}</h3>
           <p className="dh-segment-inspect__corridor-info">
             <MapPin size={11} className="dh-segment-inspect__pin-icon" aria-hidden="true" />
-            NH-7 Pilot Corridor · Segment {segment.index + 1} of 20 (250m uniform unit)
+            {bp
+              ? `Road Alignment · ${bp.segment_length_m ? Math.round(bp.segment_length_m) : 250}m segment (Chainage: ${bp.start_km?.toFixed(2)}–${bp.end_km?.toFixed(2)} km)`
+              : `NH-7 Pilot Corridor · Segment ${segment.index + 1} of 20 (250m uniform unit)`}
           </p>
         </div>
       </div>
@@ -111,7 +133,7 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
               className="dh-segment-inspect__score-number"
               style={{ color: segment.colorHex }}
             >
-              {Math.round(score)}
+              {score > 0 ? score.toFixed(1) : '—'}
             </span>
             <span className="dh-segment-inspect__score-denom">/ 100</span>
           </div>
@@ -127,7 +149,7 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
         >
           <div
             className="dh-segment-inspect__gauge-bar"
-            style={{ width: `${score}%`, backgroundColor: segment.colorHex }}
+            style={{ width: `${Math.min(100, Math.max(0, score))}%`, backgroundColor: segment.colorHex }}
           />
         </div>
 
@@ -144,7 +166,9 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
       <div className="dh-segment-inspect__factors">
         <div className="dh-segment-inspect__factors-head">
           <h4 className="dh-segment-inspect__factors-title">Factor Attribution Breakdown</h4>
-          <span className="dh-segment-inspect__weights-tag">Deterministic model weights</span>
+          <span className="dh-segment-inspect__weights-tag">
+            {bp ? (bp.is_risk_complete ? 'Complete MCDA' : 'Partial MCDA') : 'Deterministic model weights'}
+          </span>
         </div>
 
         {/* 1. Slope Gradient */}
@@ -152,10 +176,14 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
           <div className="dh-segment-inspect__factor-meta">
             <div className="dh-segment-inspect__factor-name">
               <Mountain size={13} className="dh-segment-inspect__factor-icon" aria-hidden="true" />
-              <span>Topographic Slope</span>
+              <span>Topographic Slope (Copernicus DEM)</span>
             </div>
             <span className="dh-segment-inspect__factor-metric">
-              35% weight · {segment.gradientDegrees.toFixed(1)}° gradient
+              {bp
+                ? bp.slope_degrees !== null && bp.slope_degrees !== undefined
+                  ? `${bp.slope_degrees.toFixed(1)}° (${bp.elevation_m !== null && bp.elevation_m !== undefined ? Math.round(bp.elevation_m) + 'm' : '—'})`
+                  : 'Not available'
+                : `${segment.gradientDegrees.toFixed(1)}° gradient`}
             </span>
           </div>
           <div className="dh-segment-inspect__factor-bar-bg">
@@ -168,7 +196,7 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
             />
           </div>
           <span className="dh-segment-inspect__factor-caption">
-            DEM 90m hypsometric slope gradient across segment polyline.
+            Copernicus GLO-30 DEM 30m resolution elevation and slope.
           </span>
         </div>
 
@@ -177,10 +205,10 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
           <div className="dh-segment-inspect__factor-meta">
             <div className="dh-segment-inspect__factor-name">
               <CloudRain size={13} className="dh-segment-inspect__factor-icon" aria-hidden="true" />
-              <span>24h Rainfall Saturation</span>
+              <span>24h Precipitation (Open-Meteo)</span>
             </div>
             <span className="dh-segment-inspect__factor-metric">
-              30% weight · {rainfallRateMm.toFixed(1)} mm/h
+              {rainfallRateMm > 0 ? `${rainfallRateMm.toFixed(1)} mm` : '0.0 mm'}
             </span>
           </div>
           <div className="dh-segment-inspect__factor-bar-bg">
@@ -193,7 +221,9 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
             />
           </div>
           <span className="dh-segment-inspect__factor-caption">
-            Active Open-Meteo precipitation rate &amp; scenario stress input.
+            {bp && bp.p72_mm !== null && bp.p72_mm !== undefined
+              ? `Open-Meteo observed (72h: ${bp.p72_mm.toFixed(1)}mm, ARI: ${bp.ari_mm?.toFixed(1) ?? '—'}mm)`
+              : 'Active Open-Meteo precipitation telemetry.'}
           </span>
         </div>
 
@@ -202,10 +232,12 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
           <div className="dh-segment-inspect__factor-meta">
             <div className="dh-segment-inspect__factor-name">
               <History size={13} className="dh-segment-inspect__factor-icon" aria-hidden="true" />
-              <span>Historical Scar Proximity</span>
+              <span>Landslide Scars (GSI Inventory)</span>
             </div>
             <span className="dh-segment-inspect__factor-metric">
-              20% weight · {scarScore}/100 exposure
+              {bp
+                ? `${bp.distance_to_historic_scar_m !== null && bp.distance_to_historic_scar_m !== undefined ? Math.round(bp.distance_to_historic_scar_m) + 'm' : '—'} dist · ${bp.scar_density_1km ?? '—'} scars/km²`
+                : `${scarScore}/100 exposure`}
             </span>
           </div>
           <div className="dh-segment-inspect__factor-bar-bg">
@@ -218,19 +250,25 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
             />
           </div>
           <span className="dh-segment-inspect__factor-caption">
-            NRSC Landslide Atlas inventory proximity index.
+            Geological Survey of India (GSI) 1:50k landslide catalog KD-Tree.
           </span>
         </div>
 
-        {/* 4. Road Geometry & Bend Radius */}
+        {/* 4. Road Cut-Slope Status */}
         <div className="dh-segment-inspect__factor-item">
           <div className="dh-segment-inspect__factor-meta">
             <div className="dh-segment-inspect__factor-name">
               <GitBranch size={13} className="dh-segment-inspect__factor-icon" aria-hidden="true" />
-              <span>Road Geometry Exposure</span>
+              <span>Road-Cut Status (OSM)</span>
             </div>
             <span className="dh-segment-inspect__factor-metric">
-              15% weight · {geometryScore}/100
+              {bp
+                ? bp.is_cut_slope === true
+                  ? 'Detected'
+                  : bp.is_cut_slope === false
+                  ? 'Not detected'
+                  : 'Unknown'
+                : `${geometryScore}/100`}
             </span>
           </div>
           <div className="dh-segment-inspect__factor-bar-bg">
@@ -243,7 +281,33 @@ export const SegmentInspection: React.FC<SegmentInspectionProps> = ({
             />
           </div>
           <span className="dh-segment-inspect__factor-caption">
-            Curvature constraints and cut-slope toe setback along corridor alignment.
+            {bp
+              ? 'OpenStreetMap engineered road-cut excavation buffer.'
+              : 'Curvature constraints and cut-slope toe setback along corridor alignment.'}
+          </span>
+        </div>
+
+        {/* 5. Data Quality & Missing Features */}
+        <div className="dh-segment-inspect__factor-item">
+          <div className="dh-segment-inspect__factor-meta">
+            <div className="dh-segment-inspect__factor-name">
+              <ShieldAlert size={13} className="dh-segment-inspect__factor-icon" aria-hidden="true" />
+              <span>Data Quality &amp; Feature Coverage</span>
+            </div>
+            <span
+              className="dh-segment-inspect__factor-metric"
+              style={{
+                fontWeight: 700,
+                color: (bp?.is_risk_complete ?? true) ? 'var(--risk-low)' : 'var(--risk-moderate)',
+              }}
+            >
+              {bp ? (bp.is_risk_complete ? 'FULL EVALUATION' : 'PARTIAL EVALUATION') : segment.dataQualityRating}
+            </span>
+          </div>
+          <span className="dh-segment-inspect__factor-caption">
+            {bp?.missing_features && bp.missing_features.length > 0
+              ? `Missing factors: ${bp.missing_features.join(', ')}. Assessment is partial; missing data is never assumed safe.`
+              : 'All risk factors populated and evaluated.'}
           </span>
         </div>
       </div>

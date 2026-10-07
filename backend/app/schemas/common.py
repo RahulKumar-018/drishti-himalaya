@@ -13,6 +13,7 @@ class RiskTier(str, Enum):
     MODERATE = "MODERATE"
     HIGH = "HIGH"
     SEVERE = "SEVERE"
+    INDETERMINATE = "INDETERMINATE"
 
 
 class AlertLevel(str, Enum):

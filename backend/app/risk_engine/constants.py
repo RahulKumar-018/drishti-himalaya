@@ -70,10 +70,12 @@ COLOR_LOW: str = "#10B981"       # Green
 COLOR_MODERATE: str = "#EAB308"  # Yellow
 COLOR_HIGH: str = "#F97316"      # Orange
 COLOR_SEVERE: str = "#EF4444"    # Red
+COLOR_INDETERMINATE: str = "#64748B"  # Slate Gray
 
 RISK_TIER_COLORS: dict[RiskTier, str] = {
     RiskTier.LOW: COLOR_LOW,
     RiskTier.MODERATE: COLOR_MODERATE,
     RiskTier.HIGH: COLOR_HIGH,
     RiskTier.SEVERE: COLOR_SEVERE,
+    RiskTier.INDETERMINATE: COLOR_INDETERMINATE,
 }

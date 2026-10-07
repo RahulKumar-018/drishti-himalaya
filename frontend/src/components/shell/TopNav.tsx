@@ -5,7 +5,6 @@ import {
   X,
   Compass,
   Activity,
-  BellRing,
   LayoutDashboard,
   Home,
   Info,
@@ -23,7 +22,6 @@ export type NavItemKey =
   | 'map'
   | 'corridor'
   | 'risk-analysis'
-  | 'alerts'
   | 'about';
 
 export interface NavItemConfig {
@@ -48,7 +46,6 @@ const NAV_ITEMS: readonly NavItemConfig[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, isAvailable: true },
   { key: 'map', label: 'Risk Map', icon: <Compass size={14} />, isAvailable: true },
   { key: 'risk-analysis', label: 'Analysis', icon: <Activity size={14} />, isAvailable: true },
-  { key: 'alerts', label: 'Alerts', icon: <BellRing size={14} />, isAvailable: true },
   { key: 'about', label: 'About', icon: <Info size={14} />, isAvailable: true },
 ] as const;
 

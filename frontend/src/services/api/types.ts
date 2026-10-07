@@ -22,24 +22,34 @@ export interface RouteAnalyzeRequest {
   simulated_rainfall_mm?: number | null;
 }
 
+export interface RouteSegmentProperties {
+  segment_index: number;
+  segment_length_m: number;
+  start_km: number;
+  end_km: number;
+  slope_degrees: number | null;
+  elevation_m: number | null;
+  precipitation_24h_mm?: number | null;
+  distance_to_historic_scar_m: number | null;
+  scar_density_1km: number | null;
+  is_cut_slope: boolean | null;
+  segment_risk_score: number | null;
+  risk_level?: RiskLevel;
+  risk_category?: string | null;
+  color_hex?: string | null;
+  midpoint?: [number, number];
+  p24_mm?: number | null;
+  p72_mm?: number | null;
+  ari_mm?: number | null;
+  is_risk_complete?: boolean;
+  missing_features?: string[];
+  primary_hazard_driver?: string;
+}
+
 export interface RouteSegmentFeature {
   type: 'Feature';
   id: string;
-  properties: {
-    segment_index: number;
-    segment_length_m: number;
-    start_km: number;
-    end_km: number;
-    slope_degrees: number;
-    elevation_m: number;
-    precipitation_24h_mm: number;
-    distance_to_historic_scar_m: number | null;
-    scar_density_1km: number | null;
-    is_cut_slope: boolean;
-    segment_risk_score: number;
-    risk_level: RiskLevel;
-    primary_hazard_driver: string;
-  };
+  properties: RouteSegmentProperties;
   geometry: {
     type: 'LineString';
     coordinates: [number, number][]; // [lon, lat]
@@ -57,7 +67,7 @@ export interface RouteAlternativeResult {
   average_segment_risk: number;
   high_risk_segment_count: number;
   severe_risk_segment_count: number;
-  recommendation: 'PROCEED_NORMAL' | 'CAUTION_HIGH_RISK' | 'DIVERT_ALTERNATIVE';
+  recommendation: 'PROCEED_NORMAL' | 'CAUTION_HIGH_RISK' | 'DIVERT_ALTERNATIVE' | string;
   advisory_text: string;
   geojson: {
     type: 'FeatureCollection';
@@ -66,12 +76,29 @@ export interface RouteAlternativeResult {
 }
 
 export interface RouteAnalyzeResponse {
-  status: 'success' | 'error';
+  status: 'success' | 'error' | 'PARTIAL' | 'COMPLETE' | 'INDETERMINATE' | string;
   query_id: string;
   execution_duration_ms: number;
   data_mode: 'LIVE' | 'DEMO';
   corridor: string;
   routes: RouteAlternativeResult[];
+  recommended_route_id?: string | null;
+  recommendation_available?: boolean;
+  data_availability?: {
+    routing?: boolean;
+    landslide_inventory?: boolean;
+    weather?: boolean;
+    terrain?: boolean;
+    cut_slope?: boolean;
+    missing_features?: string[];
+  };
+  data_provenance?: {
+    routing_source?: string;
+    weather_source?: string;
+    landslide_source?: string;
+    terrain_source?: string;
+    cut_slope_source?: string;
+  };
   error_message?: string;
 }
 

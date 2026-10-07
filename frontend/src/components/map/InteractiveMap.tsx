@@ -42,6 +42,10 @@ import {
 import { LocationPoint, LiveLocation, LocationSelectionMode } from '../../types/location';
 import { formatCoordinates } from '../../services/location/locationService';
 import { RouteResult } from '../../services/routing/routeTypes';
+import {
+  convertBackendFeatureToSegmentRisk,
+  getSegmentColor,
+} from '../../services/routing/segmentAdapter';
 import { RiskLegend } from './RiskLegend';
 import './InteractiveMap.css';
 
@@ -988,101 +992,285 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Marker>
           ))}
 
-        {/* ─── 2. REAL ROAD ROUTE POLYLINE (OSRM Active Navigation) ─────────── */}
+        {/* ─── 2. REAL ROAD ROUTE: INDIVIDUAL ~250M RISK SEGMENTS ─── */}
         {activeRoute && activeRoute.status === 'success' && activeRoute.geometry.length > 0 && (
           <>
-            {/* Background contrast casing */}
-            <Polyline
-              positions={activeRoute.geometry}
-              pathOptions={{
-                color: '#020617',
-                weight: 9,
-                opacity: 0.85,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-            {/* Foreground real road route polyline */}
-            <Polyline
-              positions={activeRoute.geometry}
-              pathOptions={{
-                color: '#00e5ff',
-                weight: 5,
-                opacity: 0.95,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            >
-              <Tooltip sticky direction="top">
-                <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                  Road Route ({activeRoute.provider}): {activeRoute.metrics.formattedDistance} · {activeRoute.metrics.formattedDuration}
-                </span>
-              </Tooltip>
-              <Popup maxWidth={340} className="dh-segment-popup">
-                <div className="dh-popup-card dh-popup-card--route">
-                  <div className="dh-popup-card__header">
-                    <span className="dh-popup-card__title">REAL ROAD ROUTE</span>
-                    <span
-                      className="dh-popup-card__badge"
-                      style={{
-                        color: '#00e5ff',
-                        backgroundColor: 'rgba(0, 229, 255, 0.12)',
-                        borderColor: '#00e5ff',
-                        border: '1px solid #00e5ff',
-                      }}
-                    >
-                      {activeRoute.provider}
+            {/* If backend analyzed segments exist, render two-layer segment architecture */}
+            {activeRoute.analyzedRoute?.geojson?.features && activeRoute.analyzedRoute.geojson.features.length > 0 ? (
+              <>
+                {/* Layer 1: Thin neutral complete base route underneath */}
+                <Polyline
+                  positions={activeRoute.geometry}
+                  pathOptions={{
+                    color: '#0f172a',
+                    weight: 4,
+                    opacity: 0.5,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+
+                {/* Layer 2: Individual ~250m colored risk segments */}
+                {activeRoute.analyzedRoute.geojson.features.map((feature) => {
+                  const isSelected =
+                    selectedSegmentId === feature.id ||
+                    selectedSegmentId === `seg_${feature.properties.segment_index}` ||
+                    selectedSegmentId === `Segment #${String(feature.properties.segment_index + 1).padStart(3, '0')}` ||
+                    selectedSegmentId === String(feature.properties.segment_index);
+
+                  const color = getSegmentColor(feature.properties.risk_category, feature.properties.color_hex);
+                  const segCoords = feature.geometry.coordinates.map(
+                    (pt) => [pt[1], pt[0]] as [number, number]
+                  );
+                  const segNumberStr = String(feature.properties.segment_index + 1).padStart(3, '0');
+
+                  return (
+                    <React.Fragment key={feature.id || `seg_${feature.properties.segment_index}`}>
+                      {/* Selection Halo / Ring */}
+                      {isSelected && (
+                        <Polyline
+                          positions={segCoords}
+                          pathOptions={{
+                            color: '#ffffff',
+                            weight: 12,
+                            opacity: 0.9,
+                            lineCap: 'round',
+                            lineJoin: 'round',
+                          }}
+                        />
+                      )}
+
+                      {/* Foreground Segment Styled from Backend Risk Tier */}
+                      <Polyline
+                        positions={segCoords}
+                        pathOptions={{
+                          color: color,
+                          weight: isSelected ? 8 : 6,
+                          opacity: isSelected ? 1.0 : 0.95,
+                          lineCap: 'round',
+                          lineJoin: 'round',
+                        }}
+                        eventHandlers={{
+                          click: () => {
+                            const adapted = convertBackendFeatureToSegmentRisk(feature);
+                            onSelectSegment?.(adapted);
+                          },
+                        }}
+                      >
+                        <Tooltip sticky direction="top">
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                            Seg #{segNumberStr} · {feature.properties.risk_category || 'INDETERMINATE'} ({feature.properties.segment_risk_score !== null && feature.properties.segment_risk_score !== undefined ? feature.properties.segment_risk_score.toFixed(1) : 'PARTIAL'})
+                          </span>
+                        </Tooltip>
+                        <Popup maxWidth={360} className="dh-segment-popup">
+                          <div className="dh-popup-card dh-popup-card--segment">
+                            <div className="dh-popup-card__header">
+                              <span className="dh-popup-card__title">
+                                SEGMENT {segNumberStr}
+                              </span>
+                              <span
+                                className="dh-popup-card__badge"
+                                style={{
+                                  color: color,
+                                  backgroundColor: `${color}20`,
+                                  borderColor: color,
+                                  border: `1px solid ${color}`,
+                                }}
+                              >
+                                {feature.properties.risk_category || 'INDETERMINATE'}
+                              </span>
+                            </div>
+
+                            <div className="dh-popup-card__route-name" style={{ marginBottom: '8px' }}>
+                              {feature.id} · ~{Math.round(feature.properties.segment_length_m || 250)} m · Chainage {feature.properties.start_km?.toFixed(2)}–{feature.properties.end_km?.toFixed(2)} km
+                            </div>
+
+                            <div className="dh-popup-card__grid">
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Risk Score</span>
+                                <span className="dh-popup-card__meta-v" style={{ color: color, fontWeight: 700 }}>
+                                  {feature.properties.segment_risk_score !== null && feature.properties.segment_risk_score !== undefined
+                                    ? feature.properties.segment_risk_score.toFixed(2)
+                                    : 'Indeterminate'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">DEM Slope</span>
+                                <span className="dh-popup-card__meta-v">
+                                  {feature.properties.slope_degrees !== null && feature.properties.slope_degrees !== undefined
+                                    ? `${feature.properties.slope_degrees.toFixed(1)}°`
+                                    : 'Not available'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Rainfall (24h)</span>
+                                <span className="dh-popup-card__meta-v">
+                                  {feature.properties.precipitation_24h_mm !== null && feature.properties.precipitation_24h_mm !== undefined
+                                    ? `${feature.properties.precipitation_24h_mm.toFixed(1)} mm`
+                                    : feature.properties.p24_mm !== null && feature.properties.p24_mm !== undefined
+                                    ? `${feature.properties.p24_mm.toFixed(1)} mm`
+                                    : 'Not available'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Historic Scar Dist</span>
+                                <span className="dh-popup-card__meta-v">
+                                  {feature.properties.distance_to_historic_scar_m !== null && feature.properties.distance_to_historic_scar_m !== undefined
+                                    ? `${Math.round(feature.properties.distance_to_historic_scar_m)} m`
+                                    : 'Not available'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Landslide Density</span>
+                                <span className="dh-popup-card__meta-v">
+                                  {feature.properties.scar_density_1km !== null && feature.properties.scar_density_1km !== undefined
+                                    ? `${feature.properties.scar_density_1km} scars/km²`
+                                    : 'Not available'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Road Cut (Cut-Slope)</span>
+                                <span className="dh-popup-card__meta-v">
+                                  {feature.properties.is_cut_slope === true
+                                    ? 'Detected'
+                                    : feature.properties.is_cut_slope === false
+                                    ? 'Not detected'
+                                    : 'Unknown'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Data Quality</span>
+                                <span className="dh-popup-card__meta-v" style={{ fontWeight: 600 }}>
+                                  {feature.properties.is_risk_complete ? 'FULL' : 'PARTIAL'}
+                                </span>
+                              </div>
+
+                              <div className="dh-popup-card__grid-item">
+                                <span className="dh-popup-card__meta-k">Missing Features</span>
+                                <span
+                                  className="dh-popup-card__meta-v"
+                                  style={{ color: feature.properties.missing_features?.length ? 'var(--risk-moderate)' : 'inherit' }}
+                                >
+                                  {feature.properties.missing_features && feature.properties.missing_features.length > 0
+                                    ? feature.properties.missing_features.join(', ')
+                                    : 'None'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="dh-popup-card__disclaimer" style={{ marginTop: '8px' }}>
+                              {feature.properties.missing_features?.length
+                                ? `Partial risk assessment: ${feature.properties.missing_features.join(', ')} unavailable. No missing factor assumed safe.`
+                                : 'Deterministic 5-factor geotechnical hazard evaluation.'}
+                            </div>
+                          </div>
+                        </Popup>
+                      </Polyline>
+                    </React.Fragment>
+                  );
+                })}
+              </>
+            ) : (
+              /* Fallback single continuous line when backend analysis is unavailable */
+              <>
+                <Polyline
+                  positions={activeRoute.geometry}
+                  pathOptions={{
+                    color: '#020617',
+                    weight: 9,
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+                <Polyline
+                  positions={activeRoute.geometry}
+                  pathOptions={{
+                    color: '#00e5ff',
+                    weight: 5,
+                    opacity: 0.95,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                >
+                  <Tooltip sticky direction="top">
+                    <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                      Road Route ({activeRoute.provider}): {activeRoute.metrics.formattedDistance} · {activeRoute.metrics.formattedDuration}
                     </span>
-                  </div>
+                  </Tooltip>
+                  <Popup maxWidth={340} className="dh-segment-popup">
+                    <div className="dh-popup-card dh-popup-card--route">
+                      <div className="dh-popup-card__header">
+                        <span className="dh-popup-card__title">REAL ROAD ROUTE</span>
+                        <span
+                          className="dh-popup-card__badge"
+                          style={{
+                            color: '#00e5ff',
+                            backgroundColor: 'rgba(0, 229, 255, 0.12)',
+                            borderColor: '#00e5ff',
+                            border: '1px solid #00e5ff',
+                          }}
+                        >
+                          {activeRoute.provider}
+                        </span>
+                      </div>
 
-                  <div className="dh-popup-card__route-name">
-                    {activeRoute.origin.name} → {activeRoute.destination.name}
-                  </div>
+                      <div className="dh-popup-card__route-name">
+                        {activeRoute.origin.name} → {activeRoute.destination.name}
+                      </div>
 
-                  <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Road Distance</span>
-                      <span className="dh-popup-card__meta-v" style={{ color: '#00e5ff' }}>
-                        {activeRoute.metrics.formattedDistance}
-                      </span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Est. Duration</span>
-                      <span className="dh-popup-card__meta-v">
-                        {activeRoute.metrics.formattedDuration}
-                      </span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Elevation Profile</span>
-                      <span className="dh-popup-card__meta-v">
-                        {activeRoute.metrics.elevationMin !== null
-                          ? `${activeRoute.metrics.elevationMin}m → ${activeRoute.metrics.elevationMax}m`
-                          : 'Unavailable'}
-                      </span>
-                    </div>
-                    <div className="dh-popup-card__grid-item">
-                      <span className="dh-popup-card__meta-k">Peak Gradient</span>
-                      <span className="dh-popup-card__meta-v">
-                        {activeRoute.metrics.peakGradientDegrees !== null
-                          ? `${activeRoute.metrics.peakGradientDegrees}° (${activeRoute.metrics.peakGradientPercent}%)`
-                          : '—'}
-                      </span>
-                    </div>
-                  </div>
+                      <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Road Distance</span>
+                          <span className="dh-popup-card__meta-v" style={{ color: '#00e5ff' }}>
+                            {activeRoute.metrics.formattedDistance}
+                          </span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Est. Duration</span>
+                          <span className="dh-popup-card__meta-v">
+                            {activeRoute.metrics.formattedDuration}
+                          </span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Elevation Profile</span>
+                          <span className="dh-popup-card__meta-v">
+                            {activeRoute.metrics.elevationMin !== null
+                              ? `${activeRoute.metrics.elevationMin}m → ${activeRoute.metrics.elevationMax}m`
+                              : 'Unavailable'}
+                          </span>
+                        </div>
+                        <div className="dh-popup-card__grid-item">
+                          <span className="dh-popup-card__meta-k">Peak Gradient</span>
+                          <span className="dh-popup-card__meta-v">
+                            {activeRoute.metrics.peakGradientDegrees !== null
+                              ? `${activeRoute.metrics.peakGradientDegrees}° (${activeRoute.metrics.peakGradientPercent}%)`
+                              : '—'}
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="dh-popup-card__telemetry-scope" style={{ marginTop: '8px' }}>
-                    <span>Samples: {activeRoute.metrics.sampleCount} points (~500m intervals)</span>
-                    <span className="dh-popup-card__scope-note">
-                      DEM Coverage: {activeRoute.metrics.elevationCoverageRatio || 'Unavailable'}
-                    </span>
-                  </div>
+                      <div className="dh-popup-card__telemetry-scope" style={{ marginTop: '8px' }}>
+                        <span>Samples: {activeRoute.metrics.sampleCount} points (~500m intervals)</span>
+                        <span className="dh-popup-card__scope-note">
+                          DEM Coverage: {activeRoute.metrics.elevationCoverageRatio || 'Unavailable'}
+                        </span>
+                      </div>
 
-                  <div className="dh-popup-card__disclaimer">
-                    Routing provides physical road geometry and navigation estimates. It does not predict landslides or evaluate geotechnical slope stability.
-                  </div>
-                </div>
-              </Popup>
-            </Polyline>
+                      <div className="dh-popup-card__disclaimer">
+                        Routing provides physical road geometry and navigation estimates. It does not predict landslides or evaluate geotechnical slope stability.
+                      </div>
+                    </div>
+                  </Popup>
+                </Polyline>
+              </>
+            )}
           </>
         )}
 

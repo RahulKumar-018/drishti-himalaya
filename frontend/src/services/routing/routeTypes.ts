@@ -6,6 +6,7 @@
  */
 
 import { LocationPoint } from '../../types/location';
+import { RouteAlternativeResult, RouteAnalyzeResponse } from '../api/types';
 
 export type RouteProfile = 'driving' | 'walking';
 
@@ -95,6 +96,8 @@ export interface RouteResult {
   waypoints: Array<{ name: string; location: [number, number] }>;
   fetchedAt: string;
   error?: string;
+  analyzedRoute?: RouteAlternativeResult;
+  analysisResponse?: RouteAnalyzeResponse;
 }
 
 /**

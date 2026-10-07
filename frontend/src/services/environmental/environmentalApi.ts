@@ -27,6 +27,7 @@ interface CacheEntry<T> {
 }
 
 const memoryCache = new Map<string, CacheEntry<unknown>>();
+let rateLimitCooldownUntil = 0;
 
 export interface FetchOptions {
   timeoutMs?: number;
@@ -39,6 +40,7 @@ export interface FetchOptions {
  */
 export function clearEnvironmentalCache(): void {
   memoryCache.clear();
+  rateLimitCooldownUntil = 0;
 }
 
 /**
@@ -58,6 +60,16 @@ export async function fetchEnvironmentalJson<T>(
   } = options;
 
   const now = Date.now();
+
+  // Fast-fail if a rate limit cooldown is active from a recent 429
+  if (now < rateLimitCooldownUntil) {
+    return {
+      status: 'error',
+      data: null,
+      error: 'Rate limit active on environmental API. Cooldown in effect, please try again shortly.',
+      statusCode: 429,
+    };
+  }
 
   // Check in-memory cache if not explicitly skipped
   if (!skipCache && memoryCache.has(url)) {
@@ -106,6 +118,7 @@ export async function fetchEnvironmentalJson<T>(
       }
 
       if (response.status === 429) {
+        rateLimitCooldownUntil = now + 30000;
         return {
           status: 'error',
           data: null,
