@@ -42,6 +42,7 @@ class SegmentProperties(BaseModel):
     p72_mm: float | None = Field(default=None, description="72h rainfall in mm.")
     ari_mm: float | None = Field(default=None, description="ARI index in mm.")
     is_risk_complete: bool = Field(default=False, description="True if all factors were present.")
+    missing_features: list[str] = Field(default_factory=list, description="Unpopulated factors preventing full evaluation.")
 
 
 class SegmentFeature(BaseModel):

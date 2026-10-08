@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   DashboardPage,
   RiskAnalysisPage,
-  AlertsPage,
   AboutPage,
 } from './pages';
 import { useEnvironmentalData, useRiskAssessment, useLocationSelection } from './hooks';
@@ -359,40 +358,6 @@ function MainApp(): React.JSX.Element {
             segments={segments}
             scenarioPrecipitation={scenarioPrecipitation}
             onScenarioChange={setScenarioPrecipitation}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Auxiliary Page: Alerts
-  if (viewMode === 'alerts') {
-    return (
-      <div className={`experience-shell ${theme === 'bright' ? 'experience-shell--bright' : ''}`}>
-        <ExperienceNavigation
-          start={originCorridorPoint}
-          destination={destCorridorPoint}
-          telemetry={adaptedTelemetry}
-          routeActive={Boolean(locationSelection.activeRoute || (locationSelection.origin && locationSelection.destination))}
-          theme={theme}
-          onThemeChange={setTheme}
-          backendOnline={!locationSelection.isBackendDegraded}
-          riskEngineCalculated={Boolean(liveRiskAssessment?.score !== null)}
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-        />
-        <div style={{ paddingTop: '120px', height: '100dvh', overflowY: 'auto', background: 'var(--charcoal)', paddingBottom: '60px' }}>
-          <AlertsPage
-            alerts={monitoringAlerts}
-            monitoringTrip={monitoringTrip}
-            isLoading={isMonitoringBusy}
-            error={monitoringError}
-            onRetry={refreshMonitoringAlerts}
-            onNavigate={(tab) => {
-              if (tab === 'map') setViewMode('2D');
-              else if (tab === 'home' || tab === 'terrain') setViewMode('3D');
-              else setViewMode(tab as ActiveView);
-            }}
           />
         </div>
       </div>

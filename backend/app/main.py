@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -24,6 +25,19 @@ from backend.app.services.monitoring_scheduler import start_monitoring_scheduler
 
 logger = logging.getLogger("drishti_himalaya")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown lifecycle for database and background services."""
+    try:
+        from backend.app.db.session import init_db
+        init_db()
+        logger.info("Database initialized successfully.")
+    except Exception as exc:
+        logger.warning("Database startup notice: %s", exc)
+    yield
+
+
 app = FastAPI(
     title="Drishti-Himalaya Hazard Routing API",
     version="1.0.0",
@@ -35,6 +49,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
 

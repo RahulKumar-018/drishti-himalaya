@@ -7,6 +7,10 @@
 *.env
 API keys/
 *.key
+*firebase*.json
+*service-account*.json
+secrets/
+*.pem
 
 # Python
 __pycache__/

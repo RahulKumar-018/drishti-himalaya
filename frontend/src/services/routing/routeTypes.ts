@@ -6,6 +6,7 @@
  */
 
 import { LocationPoint } from '../../types/location';
+import { RouteAlternativeResult, RouteAnalyzeResponse } from '../api/types';
 
 export type RouteProfile = 'driving' | 'walking';
 
@@ -115,6 +116,8 @@ export interface RouteResult {
   fetchedAt: string;
   error?: string;
   routeRisk?: RouteRiskSummary;
+  analyzedRoute?: RouteAlternativeResult;
+  analysisResponse?: RouteAnalyzeResponse;
 }
 
 /**
