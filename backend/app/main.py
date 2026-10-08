@@ -20,6 +20,7 @@ from backend.app.routing.exceptions import (
     RoutingProviderError,
     RoutingTimeoutError,
 )
+from backend.app.services.monitoring_scheduler import start_monitoring_scheduler, stop_monitoring_scheduler
 
 logger = logging.getLogger("drishti_himalaya")
 
@@ -35,6 +36,16 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+
+@app.on_event("startup")
+def start_background_workers() -> None:
+    start_monitoring_scheduler()
+
+
+@app.on_event("shutdown")
+def stop_background_workers() -> None:
+    stop_monitoring_scheduler()
 
 # ---------------------------------------------------------------------------
 # CORS Middleware

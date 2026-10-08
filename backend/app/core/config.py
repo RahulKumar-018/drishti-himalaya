@@ -81,7 +81,12 @@ class Settings(BaseSettings):
 
     # CORS Origins (accepts comma-separated string or list of origins)
     CORS_ORIGINS: list[str] = Field(
-        default=["http://localhost:5173", "http://127.0.0.1:5173"],
+        default=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
         description="Allowed CORS origins for frontend web communication.",
     )
 
@@ -189,6 +194,73 @@ class Settings(BaseSettings):
         description="Cache time-to-live in hours for meteorological observations.",
     )
 
+    # Firebase Admin SDK & FCM Configuration
+    FIREBASE_CREDENTIALS_PATH: str | None = Field(
+        default=None,
+        description="Path to Firebase service account JSON credentials file.",
+    )
+    FIREBASE_PROJECT_ID: str | None = Field(
+        default=None,
+        description="Firebase project ID.",
+    )
+    FCM_SENDER_ID: str | None = Field(
+        default=None,
+        description="Firebase Cloud Messaging sender ID.",
+    )
+    FCM_API_KEY: str | None = Field(
+        default=None,
+        description="Firebase Cloud Messaging API key (legacy server key).",
+    )
+    FCM_DEFAULT_TTL_SECONDS: int = Field(
+        default=86400,
+        gt=0,
+        description="Default time-to-live in seconds for FCM messages (24 hours).",
+    )
+    FCM_MAX_RETRIES: int = Field(
+        default=3,
+        ge=0,
+        description="Maximum retry attempts for FCM send failures.",
+    )
+
+    # Monitoring & Alerting Configuration
+    MONITOR_CHECK_INTERVAL_MINUTES: int = Field(
+        default=30,
+        gt=0,
+        description="Default interval in minutes for trip risk re-evaluation.",
+    )
+    MONITOR_RAIN_THRESHOLD_MM: float = Field(
+        default=25.0,
+        gt=0,
+        description="24h rainfall threshold in mm to trigger re-assessment.",
+    )
+    MONITOR_RISK_DELTA_THRESHOLD: float = Field(
+        default=10.0,
+        ge=0,
+        description="Risk score delta threshold to trigger alert.",
+    )
+    MONITOR_QUIET_HOURS_START: int = Field(
+        default=22,
+        ge=0,
+        le=23,
+        description="Quiet hours start (24h format) - no notifications sent.",
+    )
+    MONITOR_QUIET_HOURS_END: int = Field(
+        default=6,
+        ge=0,
+        le=23,
+        description="Quiet hours end (24h format) - notifications resume.",
+    )
+    MONITOR_MAX_SNAPSHOTS_PER_TRIP: int = Field(
+        default=1000,
+        gt=0,
+        description="Maximum risk snapshots to retain per trip.",
+    )
+    MONITOR_ALERT_COOLDOWN_MINUTES: int = Field(
+        default=60,
+        ge=0,
+        description="Cooldown period in minutes between alerts for same trigger.",
+    )
+
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env", "../../.env"),
         env_file_encoding="utf-8",
@@ -226,6 +298,11 @@ class Settings(BaseSettings):
         if self.LON_MIN >= self.LON_MAX:
             raise ValueError(
                 f"LON_MIN ({self.LON_MIN}) must be strictly less than LON_MAX ({self.LON_MAX})."
+            )
+        if self.DATA_MODE == "LIVE" and self.DATABASE_ENABLED and not self.is_postgres:
+            raise ValueError(
+                "LIVE mode with DATABASE_ENABLED=True requires a PostgreSQL/PostGIS DATABASE_URL; "
+                "SQLite fallback is not allowed."
             )
         return self
 

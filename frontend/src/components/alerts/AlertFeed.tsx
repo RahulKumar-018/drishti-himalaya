@@ -96,9 +96,10 @@ export const AlertFeed: React.FC<AlertFeedProps> = ({
 }) => {
   const [filterSeverity, setFilterSeverity] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'severity'>('newest');
 
   const filteredAlerts = useMemo(() => {
-    return alerts.filter((item) => {
+    const matchingAlerts = alerts.filter((item) => {
       const matchesSeverity =
         filterSeverity === 'ALL' || item.severity === filterSeverity;
       const matchesQuery =
@@ -109,7 +110,14 @@ export const AlertFeed: React.FC<AlertFeedProps> = ({
         item.code.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSeverity && matchesQuery;
     });
-  }, [alerts, filterSeverity, searchQuery]);
+    return [...matchingAlerts].sort((a, b) => {
+      if (sortOrder === 'severity') {
+        const severityRank = { SEVERE: 4, HIGH: 3, MODERATE: 2, ADVISORY: 1 };
+        return severityRank[b.severity] - severityRank[a.severity];
+      }
+      return new Date(b.issuedAtIso).getTime() - new Date(a.issuedAtIso).getTime();
+    });
+  }, [alerts, filterSeverity, searchQuery, sortOrder]);
 
   const severityCounts = useMemo(() => {
     return {
@@ -136,6 +144,14 @@ export const AlertFeed: React.FC<AlertFeedProps> = ({
             aria-label="Filter alerts by search keyword"
           />
         </div>
+
+        <label className="dh-alert-feed__sort-label">
+          Sort
+          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as 'newest' | 'severity')} aria-label="Sort alerts">
+            <option value="newest">Newest</option>
+            <option value="severity">Highest severity</option>
+          </select>
+        </label>
 
         {/* Severity Filter Tabs */}
         <div className="dh-alert-feed__tabs" role="tablist">

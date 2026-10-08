@@ -61,4 +61,6 @@ export interface LocationSelectionState {
   locationError: string | null;
   isRouteReady: boolean;
   routeMode: RouteMode;
+  travelDate?: string;
+  departureTime?: string;
 }

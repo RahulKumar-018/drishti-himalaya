@@ -25,9 +25,18 @@
   z-index: 1;
 }
 
-/* Subtle tile tuning to harmonize with dark theme while keeping OSM clear */
+/* Aggressive tile tuning to harmonize with Aurelia dark cinematic theme */
 .dh-interactive-map .leaflet-tile-pane {
-  filter: brightness(0.92) contrast(1.05) saturate(0.95);
+  filter: brightness(0.8) contrast(1.2) saturate(0.3) invert(1) hue-rotate(200deg);
+  opacity: 0.8;
+}
+
+/* Daylight readable tile appearance for light mode */
+[data-theme='light'] .dh-interactive-map .leaflet-tile-pane,
+[data-theme='bright'] .dh-interactive-map .leaflet-tile-pane,
+.experience-shell--bright .dh-interactive-map .leaflet-tile-pane {
+  filter: brightness(1.02) contrast(1.05) saturate(0.95);
+  opacity: 1;
 }
 
 /* Custom Zoom Controls */

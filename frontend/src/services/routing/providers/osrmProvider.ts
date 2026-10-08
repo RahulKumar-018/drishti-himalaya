@@ -223,6 +223,17 @@ export class OSRMProvider implements IRouteProvider {
         },
         waypoints,
         fetchedAt: new Date().toISOString(),
+        routeRisk: {
+          compositeRouteRisk: null,
+          safetyScore: null,
+          riskTier: 'INDETERMINATE',
+          highRiskSegmentCount: 0,
+          severeRiskSegmentCount: 0,
+          dominantHazards: ['Road Alignment Traverses High-Relief Garhwal Terrain'],
+          recommendation: 'Drive with caution on Himalayan mountain roads. Monitor local weather and road advisories.',
+          source: 'derived',
+          disclaimer: 'Physical road geometry from OSRM. Complete hazard scoring active when backend risk engine is connected.',
+        },
       };
 
       return result;

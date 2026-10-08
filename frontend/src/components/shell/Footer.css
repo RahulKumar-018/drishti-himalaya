@@ -4,9 +4,9 @@
 
 .dh-footer {
   background-color: var(--bg-surface);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border-default);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-family: var(--font-sans);
   margin-top: auto;
@@ -190,8 +190,8 @@
 }
 
 .dh-footer__bottom {
-  border-top: 1px solid var(--border-subtle);
-  background-color: var(--bg-app);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: transparent;
   padding: var(--space-4) var(--space-6);
 }
 

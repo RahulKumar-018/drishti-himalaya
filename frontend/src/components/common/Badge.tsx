@@ -1,5 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
+import { motion } from 'motion/react';
 import './Badge.css';
 
 export type BadgeVariant = 'default' | 'accent' | 'low' | 'moderate' | 'high' | 'severe';
@@ -25,7 +26,14 @@ export const Badge: React.FC<BadgeProps> = ({
       className={clsx('dh-badge', `dh-badge--${variant}`, `dh-badge--${size}`, className)}
       {...props}
     >
-      {showDot && <span className="dh-badge__dot" aria-hidden="true" />}
+      {showDot && (
+        <motion.span 
+          className="dh-badge__dot" 
+          aria-hidden="true" 
+          animate={{ opacity: [1, 0.3, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
       <span className="dh-badge__label">{children}</span>
     </span>
   );

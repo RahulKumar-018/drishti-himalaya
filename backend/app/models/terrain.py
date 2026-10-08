@@ -1,8 +1,11 @@
 """Topographic and geomorphological terrain observations linked to locations."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from backend.app.models.location import Location
 
 from sqlalchemy import (
     CheckConstraint,

@@ -79,6 +79,11 @@ class SavedRoute(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
     feedback = relationship("Feedback", back_populates="route")
+    monitored_trips = relationship(
+        "MonitoredTrip",
+        back_populates="route",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<SavedRoute id={self.id} {self.origin_name}->{self.destination_name} risk={self.risk_score}>"
@@ -131,6 +136,16 @@ class RouteSegment(Base):
     risk_assessments = relationship(
         "RiskAssessment",
         back_populates="segment",
+        cascade="all, delete-orphan",
+    )
+    risk_snapshots = relationship(
+        "TripRiskSnapshot",
+        back_populates="segment",
+        cascade="all, delete-orphan",
+    )
+    trip_alerts = relationship(
+        "TripAlert",
+        back_populates="affected_segment",
         cascade="all, delete-orphan",
     )
 

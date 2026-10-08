@@ -141,11 +141,11 @@ class DatabaseManager:
         Returns (is_ready, descriptor, details_dict).
         """
         db_url = settings.DATABASE_URL
-        if not settings.DATABASE_ENABLED and db_url.startswith("sqlite"):
+        if not settings.DATABASE_ENABLED:
             return (
                 True,
-                "connected (SQLite DEMO mode)",
-                {"driver": "sqlite", "postgis": False, "mode": "DEMO"},
+                "disabled (DATABASE_ENABLED=False)",
+                {"driver": "none", "enabled": False},
             )
 
         if db_url.startswith("sqlite"):
@@ -176,16 +176,38 @@ class DatabaseManager:
                         postgis_ver = res.scalar()
                     except Exception:
                         pass
+                    required_tables = {
+                        "monitored_trips",
+                        "trip_risk_snapshots",
+                        "trip_alerts",
+                        "notification_devices",
+                    }
+                    existing_tables = set(
+                        conn.execute(
+                            text(
+                                "SELECT table_name FROM information_schema.tables "
+                                "WHERE table_schema = 'public' AND table_name IN "
+                                "('monitored_trips', 'trip_risk_snapshots', 'trip_alerts', 'notification_devices')"
+                            )
+                        ).scalars().all()
+                    )
+                    missing_tables = sorted(required_tables - existing_tables)
                 if postgis_ver:
+                    if missing_tables:
+                        return (
+                            False,
+                            f"connected (PostgreSQL with PostGIS {postgis_ver}) but required tables are missing",
+                            {"driver": "postgresql", "postgis": True, "version": str(postgis_ver), "missing_tables": missing_tables},
+                        )
                     return (
                         True,
                         f"connected (PostgreSQL with PostGIS {postgis_ver})",
                         {"driver": "postgresql", "postgis": True, "version": str(postgis_ver)},
                     )
                 return (
-                    True,
+                    False,
                     "connected (PostgreSQL, PostGIS extension not active)",
-                    {"driver": "postgresql", "postgis": False},
+                    {"driver": "postgresql", "postgis": False, "missing_tables": missing_tables},
                 )
             except Exception as exc:
                 return (

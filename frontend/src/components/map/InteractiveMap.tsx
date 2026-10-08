@@ -4,6 +4,8 @@ import {
   MapContainer,
   TileLayer,
   Polyline,
+  Polygon,
+  CircleMarker,
   Marker,
   Popup,
   Tooltip,
@@ -26,6 +28,8 @@ import {
   Radio,
   Route,
   History,
+  ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   PILOT_CORRIDOR_COORDINATES,
@@ -42,6 +46,7 @@ import {
 import { LocationPoint, LiveLocation, LocationSelectionMode } from '../../types/location';
 import { formatCoordinates } from '../../services/location/locationService';
 import { RouteResult } from '../../services/routing/routeTypes';
+import { UTTARAKHAND_LOCATIONS, POPULAR_DESTINATION_IDS } from '../../data/locations/uttarakhandLocations';
 import { RiskLegend } from './RiskLegend';
 import './InteractiveMap.css';
 
@@ -65,11 +70,14 @@ const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 
-// Historical OSM Road-Cutting Dataset Endpoint (2018 snapshot)
-const HISTORICAL_CUTTINGS_API_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '')
-    ? `${(import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')}/hazard/cuttings`
-    : 'http://127.0.0.1:8000/api/v1/hazard/cuttings';
+// Backend API Endpoints for GIS Layers
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
+  (typeof window !== 'undefined' ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
+
+const HISTORICAL_CUTTINGS_API_URL = `${API_BASE_URL}/hazard/cuttings`;
+const RISK_ZONES_API_URL = `${API_BASE_URL}/risk/zones`;
+const LANDSLIDE_SCARS_API_URL = `${API_BASE_URL}/hazard/landslides?limit=80`;
 
 /**
  * Historical OSM Road-Cutting Feature (2018 historical snapshot)
@@ -94,6 +102,50 @@ export interface HistoricalCuttingsResponse {
   year: number;
   source: string;
   features: HistoricalCuttingFeature[];
+}
+
+export interface SpatialRiskZoneFeature {
+  type: 'Feature';
+  geometry: {
+    type: 'Polygon';
+    coordinates: number[][][]; // [[[lon, lat], ...]]
+  };
+  properties: {
+    zone_id: string;
+    zone_name: string;
+    risk_score: number;
+    risk_level: string;
+    color_hex: string;
+    factors: {
+      rainfall?: number;
+      slope?: number;
+      terrain?: number;
+      historical?: number;
+    };
+    disclaimer?: string;
+  };
+}
+
+export interface GSILandslideFeature {
+  type: 'Feature';
+  id: string | number;
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [lon, lat]
+  };
+  properties: {
+    SLIDE_NO?: string;
+    LATITUDE?: number;
+    LONGITUDE?: number;
+    DISTRICT?: string;
+    STATE?: string;
+    TRIGGERING?: string;
+    FAILURE_MECHANISM?: string;
+    MATERIAL_TYPE?: string;
+    LS_AREA?: number;
+    CITATION?: string;
+    [key: string]: any;
+  };
 }
 
 // Default Garhwal Himalayan Overview Coordinates
@@ -340,6 +392,14 @@ const tempBeaconIcon = L.divIcon({
   popupAnchor: [0, -14],
 });
 
+const poiBeaconIcon = L.divIcon({
+  className: 'dh-map-beacon dh-map-beacon--poi',
+  html: '<span class="dh-map-beacon__pulse" style="border-color:#c6a16a"></span><span class="dh-map-beacon__dot" style="background-color:#c6a16a;box-shadow:0 0 6px #c6a16a"></span>',
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -11],
+});
+
 export {
   PILOT_CORRIDOR_COORDINATES,
   RISHIKESH_COORDS,
@@ -499,6 +559,10 @@ export interface InteractiveMapProps {
   isRouting?: boolean;
   routingError?: string | null;
   onRetryRouting?: () => void;
+  mode?: string;
+  // Phase 2 Interactive Inspection Props
+  onSelectLocation?: (loc: LocationPoint) => void;
+  onSelectHazardEntity?: (entity: any) => void;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -531,32 +595,47 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   isRouting = false,
   routingError,
   onRetryRouting,
+  mode,
+  onSelectLocation,
+  onSelectHazardEntity,
 }) => {
   // Basemap fallback state
   const [useFallbackOsm, setUseFallbackOsm] = useState(!hasMapTilerKey);
 
-  // Wheel zoom lock state: disabled by default to protect page scrolling
-  const [wheelZoomEnabled, setWheelZoomEnabled] = useState(false);
+  // Wheel zoom lock state: enabled by default for map zoom;
+  // user can toggle off to protect page scroll (e.g. on touch devices)
+  const [wheelZoomEnabled, setWheelZoomEnabled] = useState(true);
 
   // Layer toggle states
   const [showStations, setShowStations] = useState(true);
-  const [internalShowCorridor, setInternalShowCorridor] = useState(true);
+  const [internalShowCorridor, setInternalShowCorridor] = useState(false);
   const [showHistoricalCuttings, setShowHistoricalCuttings] = useState<boolean>(true);
   const [historicalCuttings, setHistoricalCuttings] = useState<HistoricalCuttingFeature[]>([]);
   const [cuttingsYear, setCuttingsYear] = useState<number>(2018);
+  const [showRiskZones, setShowRiskZones] = useState<boolean>(true);
+  const [riskZones, setRiskZones] = useState<SpatialRiskZoneFeature[]>([]);
+  const [showLandslideScars, setShowLandslideScars] = useState<boolean>(true);
+  const [landslideScars, setLandslideScars] = useState<GSILandslideFeature[]>([]);
   const [fitTrigger, setFitTrigger] = useState<number>(0);
 
   // Calculate corridor segments fallback if enabled
-  const activeSegments =
-    segments && segments.length > 0
-      ? segments
-      : calculateCorridorSegmentRisks(null);
+  const activeSegments = React.useMemo(() => {
+    if (segments && segments.length > 0 && typeof (segments[0] as any)?.riskScore === 'number') {
+      return segments;
+    }
+    return calculateCorridorSegmentRisks(null);
+  }, [segments]);
 
+  const hasAnalyzedRouteSegments = Boolean(
+    activeRoute?.segments.some((segment) => typeof segment.riskScore === 'number')
+  );
+  
   const hasSegmentData = Boolean(activeSegments && activeSegments.length > 0);
 
   const showCorridorRoute =
     (propShowCorridorRoute !== undefined ? propShowCorridorRoute : internalShowCorridor) &&
-    hasSegmentData;
+    hasSegmentData &&
+    !hasAnalyzedRouteSegments;
 
   const handleToggleRoute = () => {
     const nextVal = !showCorridorRoute;
@@ -569,6 +648,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.info('[InteractiveMap] VITE_MAPTILER_API_KEY not configured. Falling back to OpenStreetMap.');
     }
   }, []);
+
+  // Sync layer toggles with the active experience mode
+  useEffect(() => {
+    if (!mode) return;
+    switch (mode) {
+      case "environment":
+        setShowStations(true);
+        setShowHistoricalCuttings(false);
+        setInternalShowCorridor(false);
+        break;
+      case "risk":
+        setShowStations(false);
+        setShowHistoricalCuttings(false);
+        setInternalShowCorridor(true);
+        break;
+      case "terrain":
+        setShowStations(false);
+        setShowHistoricalCuttings(true);
+        setInternalShowCorridor(false);
+        break;
+      case "overview":
+        setShowStations(true);
+        setShowHistoricalCuttings(true);
+        setInternalShowCorridor(true);
+        break;
+      case "route":
+        setShowStations(true);
+        setInternalShowCorridor(true);
+        break;
+    }
+  }, [mode]);
 
   // Fetch Historical OSM Road-Cutting dataset (2018 historical snapshot)
   useEffect(() => {
@@ -621,6 +731,57 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     };
   }, []);
 
+  // Fetch Spatial Hazard Risk Zones & GSI Landslide Scars from backend
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+
+    async function fetchHazardLayers() {
+      // 1. Fetch Spatial Hazard Risk Zones
+      try {
+        const resp = await fetch(RISK_ZONES_API_URL, {
+          signal: controller.signal,
+          headers: { Accept: 'application/json' },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (isMounted && Array.isArray(data?.features)) {
+            setRiskZones(data.features);
+          }
+        }
+      } catch (err: unknown) {
+        if (!(err instanceof DOMException && err.name === 'AbortError') && import.meta.env.DEV) {
+          console.warn('[InteractiveMap] Spatial risk zones unavailable:', err);
+        }
+      }
+
+      // 2. Fetch GSI Historical Landslide Scars
+      try {
+        const resp = await fetch(LANDSLIDE_SCARS_API_URL, {
+          signal: controller.signal,
+          headers: { Accept: 'application/json' },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (isMounted && Array.isArray(data?.features)) {
+            setLandslideScars(data.features);
+          }
+        }
+      } catch (err: unknown) {
+        if (!(err instanceof DOMException && err.name === 'AbortError') && import.meta.env.DEV) {
+          console.warn('[InteractiveMap] GSI landslide scars unavailable:', err);
+        }
+      }
+    }
+
+    fetchHazardLayers();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
+
 
   const isSelectionActive = Boolean(selectionMode);
 
@@ -640,6 +801,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         },
         className
       )}
+      onWheel={(e) => e.stopPropagation()}
     >
       {/* Simulation Status Overlay Banner */}
       {isSimulated && scenarioPrecipitation !== null && (
@@ -753,6 +915,34 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <span>Historical Cuttings</span>
         </button>
 
+        {/* Layer: Spatial Hazard Risk Zones */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': showRiskZones,
+          })}
+          onClick={() => setShowRiskZones(!showRiskZones)}
+          title="Toggle Spatial Multi-Hazard Risk Zones"
+          aria-pressed={showRiskZones}
+        >
+          <ShieldAlert size={11} aria-hidden="true" />
+          <span>Risk Zones</span>
+        </button>
+
+        {/* Layer: Geological Survey of India (GSI) Historical Landslide Scars */}
+        <button
+          type="button"
+          className={clsx('dh-interactive-map__tool-btn', {
+            'dh-interactive-map__tool-btn--active': showLandslideScars,
+          })}
+          onClick={() => setShowLandslideScars(!showLandslideScars)}
+          title="Toggle GSI Historical Landslide Scar Catalog (5,206 features)"
+          aria-pressed={showLandslideScars}
+        >
+          <AlertTriangle size={11} aria-hidden="true" />
+          <span>GSI Scars</span>
+        </button>
+
         {/* GPS Live Geolocation */}
         {onUseLiveLocation && (
           <button
@@ -808,7 +998,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
-        {/* Wheel Zoom Toggle (Protects page scroll by default) */}
+        {/* Wheel Zoom Toggle (Enabled by default for map zoom) */}
         <button
           type="button"
           className={clsx('dh-interactive-map__tool-btn', {
@@ -817,8 +1007,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           onClick={() => setWheelZoomEnabled(!wheelZoomEnabled)}
           title={
             wheelZoomEnabled
-              ? 'Mouse wheel zooms map (Click to release wheel to page scroll)'
-              : 'Mouse wheel scrolls page (Click to enable map wheel zoom)'
+              ? 'Mouse wheel zooms map (Click to release wheel for page scroll)'
+              : 'Mouse wheel scrolls page (Click to re-enable map zoom)'
           }
           aria-pressed={wheelZoomEnabled}
         >
@@ -898,6 +1088,22 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               key={st.id}
               position={[st.latitude, st.longitude]}
               icon={getStationIcon(st.riskTier)}
+              eventHandlers={{
+                click: () => {
+                  onSelectLocation?.({
+                    id: st.id,
+                    name: st.name,
+                    latitude: st.latitude,
+                    longitude: st.longitude,
+                    state: 'Uttarakhand',
+                    district: st.district,
+                    category: 'ROUTE_NODE',
+                    source: 'curated',
+                    elevationM: st.elevationM,
+                    description: st.hazardNote,
+                  });
+                },
+              }}
             >
               <Tooltip direction="top" offset={[0, -12]}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>
@@ -1105,6 +1311,45 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
+        {/* ─── 2.1 AUTHORITATIVE ROUTE RISK SEGMENTS ───────────────────────── */}
+        {hasAnalyzedRouteSegments &&
+          activeRoute?.segments.map((segment) => {
+            const score = segment.riskScore;
+            const color = segment.riskColorHex ?? (
+              score === null || score === undefined
+                ? '#94a3b8'
+                : score >= 75
+                ? '#ef4444'
+                : score >= 50
+                ? '#f59e0b'
+                : score >= 25
+                ? '#eab308'
+                : '#22c55e'
+            );
+
+            return (
+              <Polyline
+                key={`route-risk-${segment.id}`}
+                positions={segment.geometry}
+                pathOptions={{
+                  color,
+                  weight: 7,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              >
+                <Tooltip sticky direction="top">
+                  <span style={{ fontFamily: 'monospace' }}>
+                    <strong>Route segment {segment.index + 1}</strong> · Risk {score ?? 'unavailable'}/100
+                    {segment.riskTier ? ` · ${segment.riskTier}` : ''}
+                    {segment.primaryHazardDriver ? ` · ${segment.primaryHazardDriver}` : ''}
+                  </span>
+                </Tooltip>
+              </Polyline>
+            );
+          })}
+
         {/* ─── 3. CORRIDOR SEGMENT RISK ANALYSIS (Contextual risk layer along pilot corridor) ─── */}
         {showCorridorRoute &&
           activeSegments.map((segment) => {
@@ -1142,7 +1387,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 >
                   <Tooltip sticky direction="top">
                     <span style={{ fontFamily: 'monospace' }}>
-                      <strong>{segment.id}</strong>: {segment.name} | Risk {segment.riskScore.toFixed(1)}/100 ({segment.riskTier})
+                      <strong>{segment.id}</strong>: {segment.name} | Risk {typeof segment.riskScore === 'number' ? segment.riskScore.toFixed(1) : '—'}/100 ({segment.riskTier})
                     </span>
                   </Tooltip>
                   <Popup maxWidth={300} className="dh-segment-popup">
@@ -1170,19 +1415,20 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                           className="dh-popup-card__risk-value"
                           style={{ color: segment.colorHex }}
                         >
-                          {segment.riskScore.toFixed(1)} / 100
+                          {typeof segment.riskScore === 'number' ? `${segment.riskScore.toFixed(1)} / 100` : '—'}
                         </span>
                       </div>
 
                       <div className="dh-popup-card__grid">
                         <div className="dh-popup-card__grid-item">
                           <span className="dh-popup-card__meta-k">Distance</span>
-                          <span className="dh-popup-card__meta-v">~{segment.distanceKm.toFixed(1)} km</span>
+                          <span className="dh-popup-card__meta-v">~{typeof segment.distanceKm === 'number' ? segment.distanceKm.toFixed(1) : '—'} km</span>
                         </div>
                         <div className="dh-popup-card__grid-item">
                           <span className="dh-popup-card__meta-k">Terrain Gradient</span>
                           <span className="dh-popup-card__meta-v">
-                            {segment.gradientDegrees.toFixed(1)}° ({segment.gradientPercent.toFixed(1)}%)
+                            {typeof segment.gradientDegrees === 'number' ? `${segment.gradientDegrees.toFixed(1)}°` : '—'}{' '}
+                            ({typeof segment.gradientPercent === 'number' ? `${segment.gradientPercent.toFixed(1)}%` : '—'})
                           </span>
                         </div>
                         <div className="dh-popup-card__grid-item">
@@ -1205,11 +1451,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       <div className="dh-popup-card__factors">
                         <span className="dh-popup-card__factors-title">Factor Contributions</span>
                         <div className="dh-popup-card__factors-list">
-                          {segment.factorContributions.map((fc) => (
+                          {(segment.factorContributions || []).map((fc) => (
                             <div key={fc.id} className="dh-popup-card__factor-row">
                               <span className="dh-popup-card__factor-name">{fc.name}</span>
                               <span className="dh-popup-card__factor-score">
-                                {fc.contribution !== null ? `+${fc.contribution.toFixed(1)}` : '—'}
+                                {typeof fc.contribution === 'number' ? `+${fc.contribution.toFixed(1)}` : '—'}
                                 <span className="dh-popup-card__factor-weight">({fc.weightPercent}%)</span>
                               </span>
                             </div>
@@ -1316,7 +1562,176 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             );
           })}
 
-        {/* ─── 4. CUSTOM USER-SELECTED LOCATION PINS ───────────────────────── */}
+        {/* ─── 4. SPATIAL HAZARD RISK ZONES (Polygonal Multi-Hazard Exposure) ─── */}
+        {showRiskZones &&
+          riskZones.map((zone) => {
+            const polygonCoords = (zone.geometry?.coordinates?.[0] || []).map(
+              ([lng, lat]) => [lat, lng] as [number, number]
+            );
+            if (polygonCoords.length < 3) return null;
+
+            const p = zone.properties;
+            const zoneColor = p.color_hex || '#eab308';
+
+            return (
+              <Polygon
+                key={p.zone_id}
+                positions={polygonCoords}
+                pathOptions={{
+                  color: zoneColor,
+                  fillColor: zoneColor,
+                  fillOpacity: 0.16,
+                  weight: 2,
+                  dashArray: '5 5',
+                }}
+                eventHandlers={{
+                  click: () => {
+                    onSelectHazardEntity?.({
+                      type: 'RISK_ZONE',
+                      id: p.zone_id,
+                      name: p.zone_name,
+                      riskScore: p.risk_score,
+                      riskTier: p.risk_level,
+                      factors: p.factors,
+                      disclaimer: p.disclaimer,
+                      source: 'Derived (MCDA Engine v1.0)',
+                    });
+                  },
+                }}
+              >
+                <Tooltip sticky direction="top">
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    Hazard Zone: {p.zone_name} · {p.risk_level} ({p.risk_score?.toFixed(1)}/100)
+                  </span>
+                </Tooltip>
+                <Popup maxWidth={320} className="dh-segment-popup">
+                  <div className="dh-popup-card dh-popup-card--zone">
+                    <div className="dh-popup-card__header">
+                      <span className="dh-popup-card__title">MULTI-HAZARD RISK ZONE</span>
+                      <span
+                        className="dh-popup-card__badge"
+                        style={{
+                          color: zoneColor,
+                          borderColor: zoneColor,
+                          backgroundColor: `${zoneColor}22`,
+                          border: `1px solid ${zoneColor}`,
+                        }}
+                      >
+                        {p.risk_level} TIER
+                      </span>
+                    </div>
+                    <div className="dh-popup-card__route-name">{p.zone_name}</div>
+                    <div className="dh-popup-card__risk-metric">
+                      <span className="dh-popup-card__risk-label">Multi-Criteria Score</span>
+                      <span className="dh-popup-card__risk-value" style={{ color: zoneColor }}>
+                        {p.risk_score?.toFixed(1)} / 100
+                      </span>
+                    </div>
+                    <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Rainfall Index</span>
+                        <span className="dh-popup-card__meta-v">{p.factors?.rainfall?.toFixed(1) ?? '—'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Slope Factor</span>
+                        <span className="dh-popup-card__meta-v">{p.factors?.slope?.toFixed(1) ?? '—'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Terrain Factor</span>
+                        <span className="dh-popup-card__meta-v">{p.factors?.terrain?.toFixed(1) ?? '—'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Data Status</span>
+                        <span className="dh-popup-card__meta-v" style={{ color: 'var(--ochre)' }}>Derived</span>
+                      </div>
+                    </div>
+                    <div className="dh-popup-card__disclaimer" style={{ marginTop: '8px' }}>
+                      {p.disclaimer || 'Computed decision-support boundary across Himalayan corridor.'}
+                    </div>
+                  </div>
+                </Popup>
+              </Polygon>
+            );
+          })}
+
+        {/* ─── 5. GSI HISTORICAL LANDSLIDE SCAR OVERLAY ─── */}
+        {showLandslideScars &&
+          landslideScars.map((scar) => {
+            const [lng, lat] = scar.geometry?.coordinates || [0, 0];
+            if (!lat || !lng) return null;
+            const p = scar.properties || {};
+
+            return (
+              <CircleMarker
+                key={`gsi-${scar.id}`}
+                center={[lat, lng]}
+                radius={5}
+                pathOptions={{
+                  color: '#ef4444',
+                  fillColor: '#ef4444',
+                  fillOpacity: 0.75,
+                  weight: 1.5,
+                }}
+                eventHandlers={{
+                  click: () => {
+                    onSelectHazardEntity?.({
+                      type: 'LANDSLIDE_SCAR',
+                      id: String(scar.id),
+                      name: `GSI Landslide #${p.SLIDE_NO || scar.id}`,
+                      district: p.DISTRICT || 'Uttarakhand',
+                      trigger: p.TRIGGERING || 'Rainfall / Saturated Soil',
+                      mechanism: p.FAILURE_MECHANISM || 'Translational Slide',
+                      material: p.MATERIAL_TYPE || 'Debris',
+                      area: p.LS_AREA,
+                      source: 'Geological Survey of India (GSI Catalog)',
+                    });
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -6]}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '10px' }}>
+                    GSI Scar #{p.SLIDE_NO || scar.id} · {p.DISTRICT || 'Uttarakhand'}
+                  </span>
+                </Tooltip>
+                <Popup maxWidth={300} className="dh-segment-popup">
+                  <div className="dh-popup-card">
+                    <div className="dh-popup-card__header">
+                      <span className="dh-popup-card__title">GSI HISTORICAL SCAR</span>
+                      <span className="dh-popup-card__badge" style={{ color: '#ef4444', borderColor: '#ef4444' }}>
+                        CATALOG #{scar.id}
+                      </span>
+                    </div>
+                    <div className="dh-popup-card__route-name">
+                      {p.SLIDE_NO || `Landslide Node ${scar.id}`}
+                    </div>
+                    <div className="dh-popup-card__grid" style={{ marginTop: '8px' }}>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">District</span>
+                        <span className="dh-popup-card__meta-v">{p.DISTRICT || 'Uttarakhand'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Trigger</span>
+                        <span className="dh-popup-card__meta-v">{p.TRIGGERING || 'Rainfall'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Mechanism</span>
+                        <span className="dh-popup-card__meta-v">{p.FAILURE_MECHANISM || 'Slope Failure'}</span>
+                      </div>
+                      <div className="dh-popup-card__grid-item">
+                        <span className="dh-popup-card__meta-k">Material</span>
+                        <span className="dh-popup-card__meta-v">{p.MATERIAL_TYPE || 'Rock / Debris'}</span>
+                      </div>
+                    </div>
+                    <div className="dh-popup-card__disclaimer" style={{ marginTop: '6px' }}>
+                      Source: Geological Survey of India (GSI) historical landslide catalog.
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
+
+        {/* ─── 6. CUSTOM USER-SELECTED LOCATION PINS ───────────────────────── */}
         {origin && (
           <Marker position={[origin.latitude, origin.longitude]} icon={originBeaconIcon}>
             <Tooltip direction="top" offset={[0, -14]} permanent>
@@ -1366,6 +1781,88 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Popup>
           </Marker>
         )}
+
+        {/* ─── 5. CANONICAL UTTARAKHAND DESTINATION POI PINS ─────────────────── */}
+        {POPULAR_DESTINATION_IDS.map((destId) => {
+          const loc = UTTARAKHAND_LOCATIONS.find((l) => l.id === destId);
+          if (!loc || loc.id === origin?.id || loc.id === destination?.id) return null;
+
+          return (
+            <Marker
+              key={`poi-${loc.id}`}
+              position={[loc.latitude, loc.longitude]}
+              icon={poiBeaconIcon}
+              eventHandlers={{
+                click: () => {
+                  onSelectLocation?.(loc);
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -10]}>
+                {loc.name}
+              </Tooltip>
+              <Popup>
+                <div className="dh-popup-card">
+                  <div className="dh-popup-card__header">
+                    <h3 className="dh-popup-card__title">{loc.name}</h3>
+                    <span className="dh-popup-card__badge" style={{ color: 'var(--ochre)', borderColor: 'var(--ochre)' }}>
+                      {loc.category}
+                    </span>
+                  </div>
+                  <span className="dh-popup-card__meta">
+                    {loc.district ? `${loc.district} District` : loc.state}
+                    {loc.elevationM ? ` · ~${loc.elevationM} m MSL` : ''}
+                  </span>
+                  <p className="dh-popup-card__desc">
+                    {loc.description ?? `${loc.name} in Uttarakhand`}
+                  </p>
+                  <div className="dh-popup-actions" style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    {onSetDestination && (
+                      <button
+                        type="button"
+                        className="dh-popup-btn dh-popup-btn--dest"
+                        onClick={() => onSetDestination(loc)}
+                        style={{
+                          flex: 1,
+                          padding: '5px 8px',
+                          background: 'rgba(198, 161, 106, 0.15)',
+                          border: '1px solid var(--ochre)',
+                          color: 'var(--ochre)',
+                          fontSize: '9px',
+                          letterSpacing: '0.08em',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        SET DESTINATION
+                      </button>
+                    )}
+                    {onSetOrigin && (
+                      <button
+                        type="button"
+                        className="dh-popup-btn dh-popup-btn--start"
+                        onClick={() => onSetOrigin(loc)}
+                        style={{
+                          flex: 1,
+                          padding: '5px 8px',
+                          background: 'rgba(83, 185, 155, 0.15)',
+                          border: '1px solid #53b99b',
+                          color: '#53b99b',
+                          fontSize: '9px',
+                          letterSpacing: '0.08em',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        SET START
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {/* Live GPS Location & Accuracy Radius */}
         {liveLocation && (

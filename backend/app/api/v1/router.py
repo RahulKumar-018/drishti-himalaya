@@ -9,6 +9,7 @@ from backend.app.api.v1.weather import router as weather_router
 from backend.app.api.v1.cuttings import router as cuttings_router
 from backend.app.api.v1.environmental import router as environmental_router
 from backend.app.api.v1.risk import router as risk_router
+from backend.app.api.v1.monitoring import router as monitoring_router
 
 api_v1_router = APIRouter()
 
@@ -20,3 +21,4 @@ api_v1_router.include_router(health_router)
 api_v1_router.include_router(cuttings_router)
 api_v1_router.include_router(environmental_router)
 api_v1_router.include_router(risk_router)
+api_v1_router.include_router(monitoring_router)

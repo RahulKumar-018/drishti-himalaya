@@ -8,14 +8,17 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background-color: rgba(13, 17, 29, 0.4);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.45);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-sizing: border-box;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  animation: cinematic-slide-up 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  animation-delay: 1.5s;
 }
 
 /* Header */
@@ -32,7 +35,7 @@
 .dh-analysis-panel__title {
   font-family: var(--font-sans);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-primary);
@@ -173,7 +176,7 @@
 .dh-analysis-panel__error-title {
   font-family: var(--font-sans);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--risk-severe);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -261,7 +264,7 @@
 .dh-analysis-panel__cell-value {
   font-family: var(--font-mono);
   font-size: var(--text-md);
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1.2;
 }
@@ -447,8 +450,9 @@
 .dh-analysis-panel__risk-score-number {
   font-family: var(--font-mono);
   font-size: var(--text-2xl);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1;
+  transition: color 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dh-analysis-panel__risk-score-denom {
@@ -460,9 +464,10 @@
 .dh-analysis-panel__risk-level-tag {
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  transition: color 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Gauge Bar */
@@ -477,7 +482,7 @@
 .dh-analysis-panel__risk-gauge-bar {
   height: 100%;
   border-radius: 3px;
-  transition: width var(--transition-normal);
+  transition: width var(--transition-normal), background-color 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Primary Driver Callout */

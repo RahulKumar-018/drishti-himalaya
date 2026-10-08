@@ -2,31 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drishti Himalaya — AI-Assisted Himalayan Hazard Intelligence &amp; Route Risk Monitoring</title>
-    <meta
-      name="description"
-      content="Real-time geotechnical and hydro-meteorological decision support for Himalayan highway corridors. Features 250m road segment disaggregation, multi-criteria hazard scoring, Copernicus DEM 90m integration, and what-if cloudburst stress simulation."
-    />
-    <meta
-      name="keywords"
-      content="Drishti Himalaya, landslide risk, Char Dham highway, Uttarakhand road safety, geotechnical hazard, Copernicus DEM, Open-Meteo, decision support"
-    />
-    <meta property="og:title" content="Drishti Himalaya | Road Hazard Early Warning" />
-    <meta
-      property="og:description"
-      content="Geospatial decision support for Himalayan pilgrimage corridors. 250m segment-level multi-factor hazard scoring and stress simulation."
-    />
-    <meta property="og:type" content="website" />
-
-    <!-- Google Fonts Preconnect & Styles -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="description" content="Drishti-Himalaya — atmospheric road intelligence for Himalayan corridors." />
+    <title>Drishti-Himalaya / Road Intelligence</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('drishti-theme');
+          var isBright = saved === 'bright' || saved === 'light';
+          var theme = isBright ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -11,7 +11,9 @@ import {
   Info,
   Wifi,
   WifiOff,
+  Mountain,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Logo } from '../brand';
 import { RiskAssessment } from '../../services/risk/types';
 import './TopNav.css';
@@ -23,6 +25,7 @@ export type NavItemKey =
   | 'map'
   | 'corridor'
   | 'risk-analysis'
+  | 'terrain'
   | 'alerts'
   | 'about';
 
@@ -45,9 +48,10 @@ export interface TopNavProps {
 
 const NAV_ITEMS: readonly NavItemConfig[] = [
   { key: 'home', label: 'Overview', icon: <Home size={14} />, isAvailable: true },
-  { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, isAvailable: true },
   { key: 'map', label: 'Risk Map', icon: <Compass size={14} />, isAvailable: true },
-  { key: 'risk-analysis', label: 'Analysis', icon: <Activity size={14} />, isAvailable: true },
+  { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, isAvailable: true },
+  { key: 'risk-analysis', label: 'Risk Calculator', icon: <Activity size={14} />, isAvailable: true },
+  { key: 'terrain', label: '3D Terrain', icon: <Mountain size={14} />, isAvailable: true },
   { key: 'alerts', label: 'Alerts', icon: <BellRing size={14} />, isAvailable: true },
   { key: 'about', label: 'About', icon: <Info size={14} />, isAvailable: true },
 ] as const;
@@ -147,14 +151,29 @@ export const TopNav: React.FC<TopNavProps> = ({
                       'dh-topnav__nav-btn--active': isActive,
                       'dh-topnav__nav-btn--inactive': !item.isAvailable,
                     })}
+                    style={{ position: 'relative', zIndex: 1 }}
                     onClick={() => handleItemClick(item.key)}
                     aria-current={isActive ? 'page' : undefined}
                     aria-disabled={!item.isAvailable ? 'true' : undefined}
                   >
-                    <span className="dh-topnav__btn-icon" aria-hidden="true">
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNavIndicator"
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: 'var(--bg-surface-elevated)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 'var(--radius-sm)',
+                          zIndex: -1
+                        }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="dh-topnav__btn-icon" aria-hidden="true" style={{ position: 'relative', zIndex: 2 }}>
                       {item.icon}
                     </span>
-                    <span>{item.label}</span>
+                    <span style={{ position: 'relative', zIndex: 2 }}>{item.label}</span>
                   </button>
                 </li>
               );

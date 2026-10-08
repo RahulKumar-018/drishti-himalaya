@@ -23,8 +23,8 @@ PROCESSED_UK_PATH = Path("data/processed/landslide_inventory_uttarakhand.geojson
 
 
 skip_if_no_raw_gsi = pytest.mark.skipif(
-    not RAW_GSI_PATH.exists(),
-    reason="Raw nationwide GSI GeoJSON not present in repository checkout",
+    not RAW_GSI_PATH.exists() or RAW_GSI_PATH.stat().st_size < 50 * 1024 * 1024,
+    reason="Raw nationwide GSI GeoJSON (>50MB) not present in repository checkout",
 )
 
 

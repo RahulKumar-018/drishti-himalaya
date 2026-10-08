@@ -52,6 +52,12 @@ export interface RouteSegment {
   elevationChangeM?: number | null;
   gradientPercent?: number | null;
   gradientDegrees?: number | null;
+  riskScore?: number | null;
+  riskTier?: string | null;
+  riskColorHex?: string | null;
+  precipitation24hMm?: number | null;
+  primaryHazardDriver?: string | null;
+  dataComplete?: boolean;
 }
 
 /**
@@ -77,6 +83,19 @@ export interface RouteMetrics {
 
 export type RouteStatus = 'idle' | 'loading' | 'success' | 'no_route' | 'error';
 
+export interface RouteRiskSummary {
+  compositeRouteRisk: number | null;
+  safetyScore: number | null;
+  riskTier: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL' | 'INDETERMINATE';
+  maxBottleneckRisk?: number | null;
+  highRiskSegmentCount: number;
+  severeRiskSegmentCount: number;
+  dominantHazards: string[];
+  recommendation?: string;
+  source: 'live_mcda' | 'derived' | 'unassessed';
+  disclaimer: string;
+}
+
 /**
  * Complete result of a road routing request.
  */
@@ -95,6 +114,7 @@ export interface RouteResult {
   waypoints: Array<{ name: string; location: [number, number] }>;
   fetchedAt: string;
   error?: string;
+  routeRisk?: RouteRiskSummary;
 }
 
 /**

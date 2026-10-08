@@ -1,8 +1,11 @@
 """Extensible weather observation model supporting multi-source meteorological inputs."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from backend.app.models.location import Location
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (

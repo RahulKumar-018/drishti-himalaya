@@ -73,9 +73,9 @@ describe('Location Dataset - Uttarakhand Curated Points', () => {
     }
   });
 
-  it('4. should provide all 9 popular destination chips', () => {
+  it('4. should provide all popular destination chips', () => {
     const popular = getPopularDestinations();
-    assert.strictEqual(popular.length, 9);
+    assert.strictEqual(popular.length, POPULAR_DESTINATION_IDS.length);
     const popularIds = popular.map((p) => p.id);
     for (const expectedId of POPULAR_DESTINATION_IDS) {
       assert.ok(popularIds.includes(expectedId), `Missing popular destination ${expectedId}`);

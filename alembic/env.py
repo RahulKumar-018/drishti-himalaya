@@ -34,7 +34,12 @@ def include_object(object, name, type_, reflected, compare_to):
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode generating raw SQL."""
-    url = config.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
+    configured_url = config.get_main_option("sqlalchemy.url")
+    url = (
+        settings.sync_database_url
+        if not configured_url or configured_url.startswith("driver://")
+        else configured_url
+    )
     context.configure(
         url=url,
         target_metadata=target_metadata,

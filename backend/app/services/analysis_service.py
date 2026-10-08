@@ -26,6 +26,7 @@ from backend.app.geospatial.terrain import BaseTerrainProvider, CopernicusDEMPro
 from backend.app.risk_engine.aggregation import calculate_route_objective, calculate_route_risk
 from backend.app.risk_engine.scoring import calculate_segment_risk
 from backend.app.routing.models import RouteWithSegments
+from backend.app.routing.providers import DemoRoutingProvider
 from backend.app.routing.service import RoutingService, get_routing_service
 from backend.app.schemas.common import CoordinatePoint, RiskTier
 from backend.app.services.analysis_models import (

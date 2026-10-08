@@ -4,12 +4,16 @@
    ============================================================================== */
 
 :root {
-  /* Surface & Background Hierarchy (Aurelia Inspired Glass) */
-  --bg-app: transparent;              /* Let the 3D scene show through */
-  --bg-surface: rgba(13, 17, 29, 0.4);          /* Primary panels and containers */
-  --bg-surface-elevated: rgba(20, 25, 40, 0.5); /* Floating cards, dropdowns, tooltips */
-  --bg-surface-muted: rgba(10, 14, 24, 0.3);    /* Inset areas, data tables, metrics wells */
-  --bg-accent: #1d3344;           /* Active nav and emphasized highlight regions */
+  /* Surface & Background Hierarchy (Solid, Geospatial) */
+  --bg-app: transparent;              /* Glass mode background */
+  --bg-surface: rgba(11, 14, 20, 0.45);          /* Primary panels and containers */
+  --bg-surface-elevated: rgba(18, 23, 30, 0.65); /* Floating cards, dropdowns, tooltips */
+  --bg-surface-muted: rgba(16, 20, 28, 0.35);    /* Inset areas, data tables, metrics wells */
+  --bg-accent: rgba(29, 51, 68, 0.6);           /* Active nav and emphasized highlight regions */
+  
+  --glass-blur: blur(16px);
+  --glass-blur-sm: blur(8px);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
   /* Text & Content Tokens */
   --text-primary: #e7f0f4;        /* High-contrast headings and primary labels */
@@ -75,11 +79,11 @@
   --space-8: 2rem;     /* 32px */
   --space-10: 2.5rem;  /* 40px */
 
-  /* Controlled Radii (UXMagic 12px / 0.75rem baseline) */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Controlled Radii (GIS Sharp) */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
   --radius-full: 9999px;
 
   /* Depth & Shadows */
@@ -89,7 +93,12 @@
   --shadow-card: 0 10px 30px -8px rgba(15, 23, 42, 0.25);
   --shadow-theme: 0 10px 30px -8px rgba(15, 23, 42, 0.12);
 
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions & Motion */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-fast: var(--duration-fast) var(--ease-standard);
+  --transition-normal: var(--duration-normal) var(--ease-standard);
 }

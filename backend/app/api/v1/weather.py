@@ -42,8 +42,10 @@ CORRIDOR_MONITORING_NODES: Dict[str, List[Dict[str, float | str]]] = {
 }
 
 
-def _determine_alert_level(p24: float) -> AlertLevel:
+def _determine_alert_level(p24: float | None) -> AlertLevel:
     """Categorize rainfall intensity into regional IMD-aligned hazard levels."""
+    if p24 is None:
+        return AlertLevel.UNKNOWN
     if p24 >= 75.0:
         return AlertLevel.RED
     if p24 >= 50.0:
@@ -54,6 +56,7 @@ def _determine_alert_level(p24: float) -> AlertLevel:
 
 
 ALERT_LEVEL_PRIORITY = {
+    AlertLevel.UNKNOWN: 0,
     AlertLevel.GREEN: 1,
     AlertLevel.YELLOW: 2,
     AlertLevel.ORANGE: 3,
@@ -91,7 +94,6 @@ def get_corridor_weather_summary(
     nodes: List[WeatherMonitoringNode] = []
     p24_values: List[float] = []
     p72_values: List[float] = []
-    highest_alert = AlertLevel.GREEN
 
     for nc in node_configs:
         name = str(nc["node_name"])
@@ -102,30 +104,40 @@ def get_corridor_weather_summary(
         if query_res.is_available and query_res.features is not None:
             p24 = query_res.features.p24_mm
             p72 = query_res.features.p72_mm
+            node_rain = round(p24, 2)
+            alert = _determine_alert_level(p24)
+            p24_values.append(p24)
+            p72_values.append(p72)
         else:
-            p24 = 0.0
-            p72 = 0.0
-
-        alert = _determine_alert_level(p24)
-        if ALERT_LEVEL_PRIORITY[alert] > ALERT_LEVEL_PRIORITY[highest_alert]:
-            highest_alert = alert
-
-        p24_values.append(p24)
-        p72_values.append(p72)
+            node_rain = None
+            alert = AlertLevel.UNKNOWN
 
         nodes.append(
             WeatherMonitoringNode(
                 node_name=name,
                 latitude=lat,
                 longitude=lon,
-                rain_24h_mm=round(p24, 2),
+                rain_24h_mm=node_rain,
                 status=alert,
             )
         )
 
-    avg_p24 = round(sum(p24_values) / len(p24_values), 2) if p24_values else 0.0
-    max_p24 = round(max(p24_values), 2) if p24_values else 0.0
-    avg_p72 = round(sum(p72_values) / len(p72_values), 2) if p72_values else 0.0
+    valid_alerts = [n.status for n in nodes if n.status != AlertLevel.UNKNOWN]
+    if valid_alerts:
+        highest_alert = max(valid_alerts, key=lambda a: ALERT_LEVEL_PRIORITY[a])
+    else:
+        highest_alert = AlertLevel.UNKNOWN
+
+    if not p24_values:
+        weather_status = "unavailable"
+    elif len(p24_values) < len(node_configs):
+        weather_status = "degraded"
+    else:
+        weather_status = "available"
+
+    avg_p24 = round(sum(p24_values) / len(p24_values), 2) if p24_values else None
+    max_p24 = round(max(p24_values), 2) if p24_values else None
+    avg_p72 = round(sum(p72_values) / len(p72_values), 2) if p72_values else None
 
     return CorridorWeatherSummaryResponse(
         corridor=f"{corridor} Corridor",
@@ -135,5 +147,6 @@ def get_corridor_weather_summary(
         max_rainfall_24h_mm=max_p24,
         average_rainfall_72h_mm=avg_p72,
         active_alert_level=highest_alert,
+        weather_status=weather_status,
         monitoring_nodes=nodes,
     )

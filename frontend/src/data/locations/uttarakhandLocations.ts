@@ -522,6 +522,71 @@ export const UTTARAKHAND_LOCATIONS: LocationPoint[] = [
     elevationM: 1982,
     description: 'Thermal spring base and pedestrian trek trailhead for Kedarnath Temple.',
   },
+  {
+    id: 'gauchar',
+    name: 'Gauchar',
+    latitude: 30.2858,
+    longitude: 79.1558,
+    state: 'Uttarakhand',
+    district: 'Chamoli',
+    category: 'ROUTE_NODE',
+    source: 'curated',
+    aliases: ['Gauchar Airstrip', 'Gauchar Fair'],
+    elevationM: 800,
+    description: 'Valley airport town on the Alaknanda river between Rudraprayag and Karnaprayag.',
+  },
+  {
+    id: 'ukhimath',
+    name: 'Ukhimath',
+    latitude: 30.5167,
+    longitude: 79.0967,
+    state: 'Uttarakhand',
+    district: 'Rudraprayag',
+    category: 'PILGRIMAGE',
+    source: 'curated',
+    aliases: ['Omkareshwar Temple', 'Winter Kedarnath Seat'],
+    elevationM: 1311,
+    description: 'Winter seat of Lord Kedarnath and transit base for Madhyamaheshwar and Chopta.',
+  },
+  {
+    id: 'barkot',
+    name: 'Barkot',
+    latitude: 30.8130,
+    longitude: 78.2078,
+    state: 'Uttarakhand',
+    district: 'Uttarkashi',
+    category: 'ROUTE_NODE',
+    source: 'curated',
+    aliases: ['Barkot Tehsil', 'Yamunotri Base'],
+    elevationM: 1220,
+    description: 'Major transit gateway and apple orchard hub on the Yamunotri pilgrimage highway.',
+  },
+  {
+    id: 'harsil',
+    name: 'Harsil',
+    latitude: 31.0372,
+    longitude: 78.7378,
+    state: 'Uttarakhand',
+    district: 'Uttarkashi',
+    category: 'TOURIST',
+    source: 'curated',
+    aliases: ['Harsil Valley', 'Wilson Cottage'],
+    elevationM: 2620,
+    description: 'Pristine Himalayan valley hamlet flanked by deodar forests on the Gangotri route.',
+  },
+  {
+    id: 'dharali',
+    name: 'Dharali',
+    latitude: 31.0425,
+    longitude: 78.7610,
+    state: 'Uttarakhand',
+    district: 'Uttarkashi',
+    category: 'TOURIST',
+    source: 'curated',
+    aliases: ['Dharali Apple Orchards', 'Bhagirathi Riverside'],
+    elevationM: 2680,
+    description: 'Picturesque alpine village and Shiva temple site upstream of Harsil on Bhagirathi river.',
+  },
 
   // ─── HIMALAYAN RESORTS, PARKS & TOURIST SPOTS ──────────────────────────────
   {
@@ -709,15 +774,36 @@ export const UTTARAKHAND_LOCATIONS: LocationPoint[] = [
 ];
 
 /**
+ * Curated list of popular starting points for one-click selection chips.
+ */
+export const POPULAR_ORIGIN_IDS = [
+  'rishikesh',
+  'dehradun',
+  'haridwar',
+  'mussoorie',
+  'srinagar-garhwal',
+  'rudraprayag',
+  'devprayag',
+  'karnaprayag',
+  'chamoli',
+  'joshimath',
+  'tehri',
+  'uttarkashi',
+  'haldwani',
+] as const;
+
+/**
  * Curated list of quick popular destinations for one-click selection chips.
  */
 export const POPULAR_DESTINATION_IDS = [
   'badrinath',
   'kedarnath',
-  'joshimath',
+  'auli',
+  'valley-of-flowers',
   'gangotri',
   'yamunotri',
-  'auli',
+  'chopta',
+  'joshimath',
   'mussoorie',
   'nainital',
   'munsiyari',

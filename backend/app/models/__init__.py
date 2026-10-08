@@ -7,6 +7,12 @@ from backend.app.models.community import CommunityHazardReport, Feedback
 from backend.app.models.disaster import DisasterEvent
 from backend.app.models.historical import LandslideRecord, RoadCutting
 from backend.app.models.location import Location
+from backend.app.models.monitoring import (
+    MonitoredTrip,
+    TripRiskSnapshot,
+    TripAlert,
+    NotificationDevice,
+)
 from backend.app.models.risk import RiskAssessment
 from backend.app.models.route import RouteSegment, SavedRoute
 from backend.app.models.terrain import TerrainObservation
@@ -33,4 +39,8 @@ __all__ = [
     "TerrainObservation",
     "DisasterEvent",
     "WeatherObservation",
+    "MonitoredTrip",
+    "TripRiskSnapshot",
+    "TripAlert",
+    "NotificationDevice",
 ]

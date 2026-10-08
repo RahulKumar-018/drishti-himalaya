@@ -1,4 +1,57 @@
+@import "tailwindcss";
 @import './styles/variables.css';
+
+@theme {
+  --color-app: transparent;
+  --color-surface: rgba(11, 14, 20, 0.45);
+  --color-surface-elevated: rgba(18, 23, 30, 0.65);
+  --color-surface-muted: rgba(16, 20, 28, 0.35);
+  --color-accent-bg: rgba(29, 51, 68, 0.6);
+  
+  --color-text-primary: #e7f0f4;
+  --color-text-secondary: #9fb3c2;
+  --color-text-muted: #748699;
+  --color-text-disabled: #3d5061;
+
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-default: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+
+  --color-accent-primary: #64b7d8;
+  --color-accent-hover: #4ea4c7;
+  --color-accent-bg: rgba(100, 183, 216, 0.12);
+  --color-accent-border: rgba(100, 183, 216, 0.32);
+  --color-ring: #64b7d8;
+
+  --color-risk-low: #53b99b;
+  --color-risk-low-bg: rgba(83, 185, 155, 0.12);
+  --color-risk-low-border: rgba(83, 185, 155, 0.32);
+
+  --color-risk-moderate: #eab308;
+  --color-risk-moderate-bg: rgba(234, 179, 8, 0.12);
+  --color-risk-moderate-border: rgba(234, 179, 8, 0.32);
+
+  --color-risk-high: #f97316;
+  --color-risk-high-bg: rgba(249, 115, 22, 0.12);
+  --color-risk-high-border: rgba(249, 115, 22, 0.32);
+
+  --color-risk-severe: #e5675f;
+  --color-risk-severe-bg: rgba(229, 103, 95, 0.14);
+  --color-risk-severe-border: rgba(229, 103, 95, 0.36);
+
+  --font-heading: 'Manrope', Inter, system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 10px 30px -8px rgba(15, 23, 42, 0.25);
+  --shadow-theme: 0 10px 30px -8px rgba(15, 23, 42, 0.12);
+
+  --animate-cinematic-fade-in: cinematic-fade-in 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-cinematic-slide-up: cinematic-slide-up 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 
 /* ==============================================================================
    GLOBAL CSS RESET & FOUNDATIONAL STYLES
@@ -16,8 +69,10 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   color-scheme: dark;
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
+  height: 100%;
+  height: 100dvh;
 }
 
 body {
@@ -27,17 +82,19 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 #root {
-  min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -116,4 +173,29 @@ button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Cinematic Reveal Animations */
+@keyframes cinematic-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-cinematic-fade-in {
+  animation: cinematic-fade-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes cinematic-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-cinematic-slide-up {
+  animation: cinematic-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

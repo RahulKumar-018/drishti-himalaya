@@ -1,8 +1,11 @@
 """Multi-hazard historical and documented disaster observations model."""
 
 from datetime import date, datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from backend.app.models.location import Location
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (

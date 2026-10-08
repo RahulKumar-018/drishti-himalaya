@@ -13,7 +13,8 @@ from backend.app.schemas.common import CoordinatePoint
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ROUTING_FIXTURE_PATH = Path("data/fixtures/routing_baseline.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_ROUTING_FIXTURE_PATH = PROJECT_ROOT / "data" / "fixtures" / "routing_baseline.json"
 
 
 def validate_uttarakhand_waypoint(

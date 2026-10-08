@@ -299,3 +299,29 @@ class TestCachingAndSegmentIntegration:
         assert isinstance(wf, WeatherFeatures)
         assert wf.p24_mm >= 0.0
         assert wf.ari_mm >= 0.0
+
+
+class TestWeatherAlertThresholdsAndAvailability:
+    """Verify deterministic meteorological alert thresholds and missing telemetry handling."""
+
+    def test_rainfall_alert_threshold_boundaries(self):
+        """Verify strict classification of boundary values: 24.9, 25.0, 49.9, 50.0, 74.9, 75.0."""
+        from backend.app.api.v1.weather import _determine_alert_level
+        from backend.app.schemas.common import AlertLevel
+
+        assert _determine_alert_level(0.0) == AlertLevel.GREEN
+        assert _determine_alert_level(24.9) == AlertLevel.GREEN
+        assert _determine_alert_level(25.0) == AlertLevel.YELLOW
+        assert _determine_alert_level(49.9) == AlertLevel.YELLOW
+        assert _determine_alert_level(50.0) == AlertLevel.ORANGE
+        assert _determine_alert_level(74.9) == AlertLevel.ORANGE
+        assert _determine_alert_level(75.0) == AlertLevel.RED
+        assert _determine_alert_level(120.0) == AlertLevel.RED
+
+    def test_missing_weather_is_unknown_never_green(self):
+        """Critical safety invariant: missing weather telemetry must NEVER default to 0.0 mm or GREEN."""
+        from backend.app.api.v1.weather import _determine_alert_level
+        from backend.app.schemas.common import AlertLevel
+
+        assert _determine_alert_level(None) == AlertLevel.UNKNOWN
+        assert _determine_alert_level(None) != AlertLevel.GREEN

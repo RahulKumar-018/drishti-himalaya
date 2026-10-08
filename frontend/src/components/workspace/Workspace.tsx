@@ -53,6 +53,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div className={clsx('dh-workspace', className)}>
+      {/* Left Column: Interactive GIS Map */}
       <div className="dh-workspace__map-region">
         {mapContent || (
           <MapViewport
@@ -70,6 +71,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           />
         )}
       </div>
+
+      {/* Right Column: Route Setup, Destination Choice & Risk Analysis */}
       <div className="dh-workspace__panel-region">
         {panelContent || (
           <AnalysisPanel

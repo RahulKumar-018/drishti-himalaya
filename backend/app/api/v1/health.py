@@ -67,7 +67,10 @@ def get_health() -> HealthResponse:
             pass
     landslide_count = inv_svc.total_count if inv_svc.is_ready else 0
 
-    is_all_ok = weather_ok and routing_ok
+    if settings.DATABASE_ENABLED:
+        is_all_ok = weather_ok and routing_ok and db_ok
+    else:
+        is_all_ok = weather_ok and routing_ok
     status_indicator = "healthy" if is_all_ok else "degraded"
 
     return HealthResponse(
@@ -87,12 +90,13 @@ def get_health() -> HealthResponse:
     "/ready",
     response_model=ReadinessResponse,
     summary="Subsystem Readiness Probe",
-    description="Inspect whether local terrain DEM, landslide spatial index, weather feed, and routing services are initialized and ready to serve traffic.",
+    description="Inspect whether local terrain DEM, landslide spatial index, weather feed, routing services, and configured database are initialized and ready to serve traffic.",
 )
 def get_ready(response: Response) -> ReadinessResponse:
-    """Readiness probe evaluating local and upstream subsystem availability."""
+    """Readiness probe evaluating local, database, and upstream subsystem availability."""
     # 1. Copernicus DEM check
-    dem_dir = Path(settings.DEM_DIRECTORY)
+    PROJECT_ROOT = Path(__file__).resolve().parents[4]
+    dem_dir = PROJECT_ROOT / settings.DEM_DIRECTORY
     dem_ready = dem_dir.exists() and any(dem_dir.rglob("*.tif"))
 
     # 2. Historical landslide KDTree inventory check
@@ -119,7 +123,7 @@ def get_ready(response: Response) -> ReadinessResponse:
     cuttings_ready = cuttings_file.exists()
 
     # 6. Database readiness check
-    db_ok, _ = _check_database()
+    db_ok, db_desc = _check_database()
 
     checks = {
         "terrain_dem": dem_ready,
@@ -130,7 +134,10 @@ def get_ready(response: Response) -> ReadinessResponse:
         "database": db_ok,
     }
 
-    critical_ready = dem_ready and inventory_ready and weather_ok and routing_ok
+    if settings.DATABASE_ENABLED:
+        critical_ready = dem_ready and inventory_ready and weather_ok and routing_ok and db_ok
+    else:
+        critical_ready = dem_ready and inventory_ready and weather_ok and routing_ok
 
     if critical_ready:
         response.status_code = status.HTTP_200_OK
@@ -139,7 +146,10 @@ def get_ready(response: Response) -> ReadinessResponse:
     else:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         overall_status = "not_ready"
-        message = "One or more critical subsystems are not ready."
+        if settings.DATABASE_ENABLED and not db_ok:
+            message = f"Database persistence is enabled but unreachable: {db_desc}"
+        else:
+            message = "One or more critical subsystems are not ready."
 
     return ReadinessResponse(
         status=overall_status,

@@ -307,3 +307,197 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Synchronized Corridor Route Banner ─── */
+.dh-analysis-page__route-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  flex-wrap: wrap;
+}
+
+.dh-analysis-page__route-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dh-analysis-page__route-icon {
+  color: var(--ochre);
+}
+
+.dh-analysis-page__route-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.dh-analysis-page__route-endpoints {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+}
+
+.dh-analysis-page__route-meta {
+  font-size: 11px;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+  padding-left: 10px;
+}
+
+.dh-analysis-page__provenance-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+/* ─── Authoritative MCDA Grid & Cards ─── */
+.dh-analysis-page__mcda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.dh-mcda-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+
+.dh-mcda-card:hover {
+  border-color: var(--line-strong);
+}
+
+.dh-mcda-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dh-mcda-card__icon {
+  color: var(--ochre);
+  flex-shrink: 0;
+}
+
+.dh-mcda-card__title-box {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dh-mcda-card__weight {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ochre);
+}
+
+.dh-mcda-card__name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--paper);
+  margin: 0;
+}
+
+.dh-mcda-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.dh-mcda-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+}
+
+.dh-mcda-stat-k {
+  color: var(--muted);
+}
+
+.dh-mcda-stat-v {
+  font-family: var(--font-mono);
+  color: var(--paper);
+}
+
+.dh-mcda-card__desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 4px 0 0 0;
+}
+
+/* ─── Data Provenance Section ─── */
+.dh-analysis-page__provenance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+}
+
+.dh-analysis-page__provenance-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ochre);
+  margin: 0;
+}
+
+.dh-analysis-page__provenance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dh-provenance-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 12px 14px;
+}
+
+.dh-provenance-box__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.dh-provenance-box__val {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--paper);
+}
+
+.dh-provenance-box__sub {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}

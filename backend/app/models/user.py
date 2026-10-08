@@ -29,6 +29,8 @@ class UserProfile(Base, TimestampMixin):
     saved_routes = relationship("SavedRoute", back_populates="user", cascade="all, delete-orphan")
     community_reports = relationship("CommunityHazardReport", back_populates="user")
     feedback = relationship("Feedback", back_populates="user")
+    monitored_trips = relationship("MonitoredTrip", back_populates="user")
+    notification_devices = relationship("NotificationDevice", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<UserProfile id={self.id} email={self.email} role={self.role}>"

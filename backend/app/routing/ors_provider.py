@@ -93,7 +93,8 @@ class ORSRoutingProvider(BaseRoutingProvider):
         max_snapping_radius_m: Optional[float] = None,
     ) -> None:
         resolved_key = api_key if api_key is not None else settings.OPENROUTESERVICE_API_KEY
-        self.api_key = resolved_key.strip() if (resolved_key and isinstance(resolved_key, str)) else None
+        raw_key = resolved_key.strip() if (resolved_key and isinstance(resolved_key, str)) else None
+        self.api_key = None if raw_key == "YOUR_ORS_API_KEY" else raw_key
         self.base_url = base_url or settings.ORS_BASE_URL
         self.profile = profile or settings.ORS_PROFILE
         self.timeout_seconds = timeout_seconds

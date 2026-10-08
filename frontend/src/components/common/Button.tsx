@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import clsx from 'clsx';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import './Button.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -36,11 +37,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isDisabled = disabled || loading;
 
     return (
-      <button
+      <motion.button
         ref={ref}
         type={type}
         disabled={isDisabled}
         aria-busy={loading ? 'true' : undefined}
+        whileHover={!isDisabled ? { y: -1, scale: 1.01 } : undefined}
+        whileTap={!isDisabled ? { scale: 0.98 } : undefined}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
         className={clsx(
           'dh-button',
           `dh-button--${variant}`,
@@ -50,11 +54,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           },
           className
         )}
-        {...props}
+        {...(props as any)}
       >
         {loading ? (
           <span className="dh-button__icon-slot" aria-hidden="true">
-            <Loader2 className="dh-button__spinner" />
+            <Loader2 className="dh-button__spinner dh-button__spinner-animated" />
           </span>
         ) : leadingIcon ? (
           <span className="dh-button__icon-slot" aria-hidden="true">
@@ -71,7 +75,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {trailingIcon}
           </span>
         )}
-      </button>
+      </motion.button>
     );
   }
 );

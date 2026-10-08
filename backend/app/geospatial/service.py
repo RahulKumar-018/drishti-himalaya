@@ -19,10 +19,12 @@ from backend.app.geospatial.models import LandslideSource, NormalizedLandslideRe
 
 logger = logging.getLogger(__name__)
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 # Default repository paths relative to project root
-DEFAULT_RAW_GSI_PATH = Path("data/raw/GSI_Landslide_Inventory.geojson")
-DEFAULT_PROCESSED_UTTARAKHAND_PATH = Path("data/processed/landslide_inventory_uttarakhand.geojson")
-DEFAULT_RAW_NRSC_PATH = Path("data/raw/NRSC_Landslide_Inventory.geojson")
+DEFAULT_RAW_GSI_PATH = PROJECT_ROOT / "data" / "raw" / "GSI_Landslide_Inventory.geojson"
+DEFAULT_PROCESSED_UTTARAKHAND_PATH = PROJECT_ROOT / "data" / "processed" / "landslide_inventory_uttarakhand.geojson"
+DEFAULT_RAW_NRSC_PATH = PROJECT_ROOT / "data" / "raw" / "NRSC_Landslide_Inventory.geojson"
 
 
 class LandslideInventoryService:

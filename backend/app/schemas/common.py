@@ -22,6 +22,7 @@ class AlertLevel(str, Enum):
     YELLOW = "YELLOW"
     ORANGE = "ORANGE"
     RED = "RED"
+    UNKNOWN = "UNKNOWN"
 
 
 class CoordinatePoint(BaseModel):

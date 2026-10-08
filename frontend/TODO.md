@@ -1,0 +1,13 @@
+# Drishti-Himalaya implementation outcomes
+
+- [x] Build a terrain-first landing experience with a short boot sequence, a distinctive Drishti Himalaya wordmark, minimal HUD, NH-7 corridor context, live environmental telemetry status, system status, Uttarakhand metadata, and a primary Select Corridor / Analyze Route action.
+- [x] Replace any fixed Rishikesh→Joshimath choice with selectable start and destination points from available corridor locations; prevent route analysis until distinct valid endpoints are selected and keep start/destination state separate from selected segment state.
+- [x] Implement a meaningful Three.js terrain layer with perspective camera, fog, ambient and directional lighting, spatial ridge/elevation variation, restrained atmosphere, route visualization, interactive markers, cinematic focus transitions, and proper resource cleanup.
+- [x] Implement data-driven route anchors and segment interactions for available corridor locations, with hover illumination, contextual tooltip, click selection, shared selectedSegmentId state, and selected-route camera focus while preserving geographic context.
+- [x] Provide Overview, Route, Environment, Terrain and Risk modes that alter visualization emphasis without creating separate generic dashboards.
+- [x] Present the intelligence panel as a tall editorial right-side surface on desktop and a responsive bottom sheet on mobile, progressively disclosing segment identity, qualitative risk only from actual engine output, environmental fields, terrain status, freshness, factor states, and uncertainty-aware decision-support language.
+- [x] Clearly communicate LIVE, CALCULATED, UNASSESSED, FUTURE/PLANNED, STALE, ERROR, UNAVAILABLE, PARTIAL, ONLINE and OFFLINE states; show DATA UNAVAILABLE rather than invented rainfall, probability, elevation or risk values.
+- [x] Preserve a Leaflet-compatible geographic integration boundary and provide a graceful WebGL fallback / geographic map mode message without breaking the rest of the application.
+- [x] Support keyboard navigation, visible focus states, aria labels, sufficient contrast, mobile touch targets and prefers-reduced-motion behavior that disables cinematic camera transitions and limits particles.
+- [x] Provide maintainable separation among types, terrain data provider, environmental telemetry adapter, risk helpers, Three.js rendering, and React experience UI; keep dependency count small and use proper Three.js disposal/performance hygiene.
+- [x] Serve a valid /manus-routes.json route manifest, run on the configured port, pass type/build checks, and checkpoint the completed project on the canonical main branch.

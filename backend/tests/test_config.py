@@ -43,6 +43,16 @@ class TestConfigSettings:
         )
         assert pg_cfg.DATABASE_URL == "postgresql://user:pass@localhost:5432/drishti_himalaya"
 
+    def test_live_persistence_rejects_sqlite_fallback(self) -> None:
+        """LIVE persistence must fail clearly instead of silently using SQLite."""
+        with pytest.raises(ValidationError):
+            Settings(
+                DATA_MODE="LIVE",
+                DATABASE_ENABLED=True,
+                DATABASE_URL="sqlite:///./drishti.db",
+                _env_file=None,
+            )
+
     def test_invalid_data_mode_is_rejected(self) -> None:
         """5. Verify that any DATA_MODE other than DEMO or LIVE is rejected."""
         with pytest.raises(ValidationError) as exc_info:

@@ -15,17 +15,20 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { DashboardCard } from '../components/dashboard/DashboardCard';
 import { RiskCard, RiskTierMetric } from '../components/dashboard/RiskCard';
-import { AffectedAreasTable, CorridorSector } from '../components/dashboard/AffectedAreasTable';
+import { AffectedAreasTable, CorridorSector, CORRIDOR_SECTORS_DATA } from '../components/dashboard/AffectedAreasTable';
 import { RecentEventsList } from '../components/dashboard/RecentEventsList';
 import { EnvironmentalData } from '../services/environmental/types';
 import { RiskAssessment, RiskLevel } from '../services/risk/types';
 import { CorridorSegmentRisk } from '../services/risk/segmentRiskService';
+import { LocationPoint } from '../types/location';
 import './DashboardPage.css';
 
 export interface DashboardPageProps {
   envData?: EnvironmentalData | null;
   riskAssessment?: RiskAssessment | null;
   segments?: CorridorSegmentRisk[];
+  origin?: LocationPoint | null;
+  destination?: LocationPoint | null;
   isLoading?: boolean;
   isRefreshing?: boolean;
   isError?: boolean;
@@ -39,62 +42,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   envData,
   riskAssessment,
   segments = [],
+  origin,
+  destination,
   isRefreshing = false,
   lastUpdated,
   onRefresh,
   onNavigate,
   className,
 }) => {
-  const compositeScore = riskAssessment?.score ?? 24.8;
-  const riskLevel: RiskLevel = riskAssessment?.level ?? 'LOW';
-  const precipRate = envData?.rainfall?.precipitation ?? 0.0;
-  const precipAccum24h = envData?.rainfall?.dailyPrecipitationSum ?? 0.0;
-  const precipProbability = envData?.rainfall?.precipitationProbability ?? 0;
-  const elevationMsl = envData?.terrain?.elevation?.elevation ?? 610;
-  const meanGradient = envData?.terrain?.routeProfile?.meanRouteGradientDegrees ?? 14.2;
-  const peakGradient = envData?.terrain?.routeProfile?.peakRouteGradientDegrees ?? 28.5;
-  const totalGain = envData?.terrain?.routeProfile?.elevationGainM ?? 2100;
+  const compositeScore = riskAssessment?.score ?? (segments.length > 0 ? Number((segments.reduce((acc, s) => acc + s.riskScore, 0) / segments.length).toFixed(1)) : null);
+  const riskLevel: RiskLevel | null = riskAssessment?.level ?? (compositeScore !== null ? (compositeScore >= 75 ? 'SEVERE' : compositeScore >= 50 ? 'HIGH' : compositeScore >= 25 ? 'MODERATE' : 'LOW') : null);
+  const precipRate = envData?.rainfall?.precipitation ?? null;
+  const precipAccum24h = envData?.rainfall?.dailyPrecipitationSum ?? null;
+  const precipProbability = envData?.rainfall?.precipitationProbability ?? null;
+  const elevationMsl = envData?.terrain?.elevation?.elevation ?? (segments[0]?.startElevationM ?? null);
+  const meanGradient = envData?.terrain?.routeProfile?.meanRouteGradientDegrees ?? (segments.length > 0 ? Number((segments.reduce((acc, s) => acc + s.gradientDegrees, 0) / segments.length).toFixed(1)) : null);
+  const peakGradient = envData?.terrain?.routeProfile?.peakRouteGradientDegrees ?? (segments.length > 0 ? Math.max(...segments.map(s => s.gradientDegrees)) : null);
+  const totalGain = envData?.terrain?.routeProfile?.elevationGainM ?? (segments.length > 1 ? Math.max(0, Math.round(segments[segments.length - 1].endElevationM - segments[0].startElevationM)) : null);
 
-  // Calculate dynamic segment tier metrics if segments available
+  // Calculate dynamic segment tier metrics directly from active corridor segments
   const tierMetrics: RiskTierMetric[] = React.useMemo(() => {
-    if (!segments || segments.length === 0) {
+    const total = segments.length;
+    if (total === 0) {
       return [
-        {
-          level: 'LOW',
-          label: 'Low Hazard (< 25)',
-          count: 14,
-          percentage: 70,
-          colorHex: 'var(--risk-low)',
-          description: 'Stable alluvial & foothill sectors',
-        },
-        {
-          level: 'MODERATE',
-          label: 'Moderate (25–50)',
-          count: 4,
-          percentage: 20,
-          colorHex: 'var(--risk-moderate)',
-          description: 'Steeper gorge alignment cuts',
-        },
-        {
-          level: 'HIGH',
-          label: 'High Hazard (50–75)',
-          count: 2,
-          percentage: 10,
-          colorHex: 'var(--risk-high)',
-          description: 'Birahi / Helang scar zones',
-        },
-        {
-          level: 'SEVERE',
-          label: 'Severe Critical (≥ 75)',
-          count: 0,
-          percentage: 0,
-          colorHex: 'var(--risk-severe)',
-          description: 'Runoff threshold breached',
-        },
+        { level: 'LOW', label: 'Low (< 25)', count: 0, percentage: 0, colorHex: 'var(--risk-low)', description: 'No corridor segments assessed' },
+        { level: 'MODERATE', label: 'Moderate (25–50)', count: 0, percentage: 0, colorHex: 'var(--risk-moderate)', description: 'No corridor segments assessed' },
+        { level: 'HIGH', label: 'High (50–75)', count: 0, percentage: 0, colorHex: 'var(--risk-high)', description: 'No corridor segments assessed' },
+        { level: 'SEVERE', label: 'Severe (≥ 75)', count: 0, percentage: 0, colorHex: 'var(--risk-severe)', description: 'No corridor segments assessed' },
       ];
     }
 
-    const total = segments.length;
     const counts = { LOW: 0, MODERATE: 0, HIGH: 0, SEVERE: 0 };
     segments.forEach((s) => {
       if (s.riskTier in counts) {
@@ -109,7 +86,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         count: counts.LOW,
         percentage: Math.round((counts.LOW / total) * 100),
         colorHex: 'var(--risk-low)',
-        description: 'Baseline stability, normal transit',
+        description: 'Stable alluvial & foothill sectors',
       },
       {
         level: 'MODERATE',
@@ -117,7 +94,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         count: counts.MODERATE,
         percentage: Math.round((counts.MODERATE / total) * 100),
         colorHex: 'var(--risk-moderate)',
-        description: 'Steep river gorge sections',
+        description: 'Steeper gorge alignment cuts',
       },
       {
         level: 'HIGH',
@@ -133,10 +110,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         count: counts.SEVERE,
         percentage: Math.round((counts.SEVERE / total) * 100),
         colorHex: 'var(--risk-severe)',
-        description: 'Critical runoff threshold exceeded',
+        description: 'Runoff threshold breached',
       },
     ];
   }, [segments]);
+
+  // Dynamic sectors generated from disaggregated route segments
+  const dynamicSectors: CorridorSector[] = React.useMemo(() => {
+    if (segments && segments.length > 0) {
+      return segments.map((seg) => ({
+        id: seg.id,
+        name: seg.name,
+        highway: 'NH-7',
+        district: seg.endElevationM > 1400 ? 'Chamoli' : seg.endElevationM > 600 ? 'Rudraprayag' : 'Tehri Garhwal',
+        elevationM: Math.round(seg.endElevationM),
+        riskLevel: seg.riskTier,
+        riskScore: Number(seg.riskScore.toFixed(1)),
+        hazardType: seg.primaryDriver || (seg.gradientDegrees > 25 ? 'Steep slope gradient cut' : 'Fluvial valley terrace'),
+        operationalStatus: (seg.riskTier === 'SEVERE' ? 'RESTRICTED' : seg.riskTier === 'HIGH' ? 'CAUTION' : 'NORMAL') as CorridorSector['operationalStatus'],
+        coordinates: [seg.coordinates[0]?.[0] ?? 30.1033, seg.coordinates[0]?.[1] ?? 78.2947] as [number, number],
+      }));
+    }
+    return CORRIDOR_SECTORS_DATA;
+  }, [segments]);
+
+  const severeCount = segments.filter((s) => s.riskTier === 'SEVERE').length;
+  const highCount = segments.filter((s) => s.riskTier === 'HIGH').length;
+  const moderateCount = segments.filter((s) => s.riskTier === 'MODERATE').length;
+  const criticalTotal = severeCount + highCount;
 
   const handleSelectSector = (sector: CorridorSector) => {
     // Jump directly to interactive map
@@ -188,18 +189,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 1: Corridor Risk Score */}
         <DashboardCard
           title="Corridor Composite Risk"
-          value={compositeScore.toFixed(1)}
-          unit="/ 100"
-          subtitle={`${riskLevel} Exposure Tier · Deterministic Multi-Criteria Index`}
+          value={compositeScore !== null ? compositeScore.toFixed(1) : '—'}
+          unit={compositeScore !== null ? "/ 100" : ""}
+          subtitle={riskLevel ? `${riskLevel} Exposure Tier · Deterministic Multi-Criteria Index` : "Telemetry unassessed or loading"}
           accentColor={riskAssessment?.colorHex ?? 'var(--risk-low)'}
           icon={<Activity size={16} />}
           badge={
             <Badge
-              variant={riskLevel === 'LOW' ? 'low' : riskLevel === 'MODERATE' ? 'moderate' : 'high'}
+              variant={riskLevel === 'LOW' ? 'low' : riskLevel === 'MODERATE' ? 'moderate' : riskLevel ? 'high' : 'default'}
               size="sm"
-              showDot
+              showDot={Boolean(riskLevel)}
             >
-              {riskLevel}
+              {riskLevel ?? 'UNASSESSED'}
             </Badge>
           }
           onClick={() => onNavigate('risk-analysis')}
@@ -213,14 +214,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 2: Live Rainfall Telemetry */}
         <DashboardCard
           title="Precipitation Intensity"
-          value={precipRate.toFixed(1)}
-          unit="mm/h"
-          subtitle={`24h Accum: ${precipAccum24h.toFixed(1)} mm · Rain Probability: ${precipProbability}%`}
+          value={precipRate !== null ? precipRate.toFixed(1) : '—'}
+          unit={precipRate !== null ? "mm/h" : ""}
+          subtitle={precipAccum24h !== null && precipProbability !== null
+            ? `24h Accum: ${precipAccum24h.toFixed(1)} mm · Rain Probability: ${precipProbability}%`
+            : "Live telemetry feed pending or unavailable"}
           accentColor="var(--accent-primary)"
           icon={<CloudRain size={16} />}
           badge={
-            <Badge variant={precipRate >= 25 ? 'severe' : precipRate > 5 ? 'moderate' : 'low'} size="sm">
-              {precipRate >= 25 ? 'RUNOFF THRESHOLD' : 'NORMAL RANGE'}
+            <Badge variant={precipRate !== null && precipRate >= 25 ? 'severe' : precipRate !== null && precipRate > 5 ? 'moderate' : 'low'} size="sm">
+              {precipRate !== null ? (precipRate >= 25 ? 'RUNOFF THRESHOLD' : 'NORMAL RANGE') : 'UNAVAILABLE'}
             </Badge>
           }
           footer={
@@ -233,40 +236,44 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 3: Slope & Terrain Gradient */}
         <DashboardCard
           title="Terrain Alignment Gradient"
-          value={`${meanGradient.toFixed(1)}°`}
-          unit={`(Peak: ${peakGradient.toFixed(1)}°)`}
-          subtitle={`Node Elevation: ${elevationMsl}m MSL · Copernicus DEM 90m`}
+          value={meanGradient !== null ? `${meanGradient.toFixed(1)}°` : '—'}
+          unit={peakGradient !== null ? `(Peak: ${peakGradient.toFixed(1)}°)` : ""}
+          subtitle={elevationMsl !== null ? `Node Elevation: ${Math.round(elevationMsl)}m MSL · Copernicus DEM 90m` : "DEM Elevation unassessed"}
           accentColor="#fb923c"
           icon={<Mountain size={16} />}
           badge={
             <Badge variant="moderate" size="sm">
-              STEEP GORGE
+              {meanGradient !== null && meanGradient > 20 ? 'STEEP GORGE' : 'HIMALAYAN CORRIDOR'}
             </Badge>
           }
           footer={
             <div className="dh-dashboard-card__meta-link">
-              <span>Elevation Gain: +{totalGain}m MSL along NH-7</span>
+              <span>{totalGain !== null ? `Elevation Gain: +${totalGain}m MSL along NH-7` : 'Terrain profile pending'}</span>
             </div>
           }
         />
 
-        {/* Metric 4: Active Early Warnings */}
+        {/* Metric 4: Active Critical Hazard Segments */}
         <DashboardCard
-          title="Early Warning Bulletins"
-          value="5"
-          unit="Active"
-          subtitle="1 Severe · 2 High · 1 Moderate · 1 Advisory"
-          accentColor="var(--risk-high)"
+          title="Critical Hazard Segments"
+          value={String(criticalTotal)}
+          unit={`/ ${segments.length || 20}`}
+          subtitle={
+            criticalTotal > 0
+              ? `${severeCount} Severe · ${highCount} High · ${moderateCount} Moderate segments`
+              : 'All evaluated corridor sectors within baseline thresholds'
+          }
+          accentColor={criticalTotal > 0 ? 'var(--risk-high)' : 'var(--risk-low)'}
           icon={<AlertTriangle size={16} />}
           badge={
-            <Badge variant="high" size="sm" showDot>
-              ACTION REQUIRED
+            <Badge variant={criticalTotal > 0 ? 'high' : 'low'} size="sm" showDot>
+              {criticalTotal > 0 ? 'ACTION REQUIRED' : 'CORRIDOR STABLE'}
             </Badge>
           }
           onClick={() => onNavigate('alerts')}
           footer={
             <div className="dh-dashboard-card__meta-link">
-              <span>Latest: Talus displacement near Joshimath</span>
+              <span>Provenance: GSI Landslide Inventory &amp; Historical Cut-Slopes</span>
             </div>
           }
         />
@@ -276,7 +283,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <section className="dh-dashboard-mid-row">
         <div className="dh-dashboard-mid-col dh-dashboard-mid-col--spectrum">
           <RiskCard
-            activeLevel={riskLevel}
+            activeLevel={riskLevel ?? undefined}
             compositeScore={compositeScore}
             tierMetrics={tierMetrics}
             onSelectTier={() => onNavigate('risk-analysis')}
@@ -287,7 +294,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <Card
             variant="default"
             title="Geospatial Corridor Navigator"
-            subtitle="Pilot Sector: Rishikesh to Joshimath (NH-7)"
+            subtitle={`Active Corridor: ${origin?.name || 'Rishikesh'} to ${destination?.name || 'Badrinath'} (NH-7)`}
             headerAction={
               <Button
                 variant="ghost"
@@ -305,12 +312,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div className="dh-dashboard-map-preview-overlay">
                   <div className="dh-dashboard-map-preview-marker dh-dashboard-map-preview-marker--origin">
                     <MapPin size={12} />
-                    <span>Rishikesh (372m)</span>
+                    <span>{origin?.name || 'Rishikesh'} ({Math.round(segments[0]?.startElevationM ?? 372)}m)</span>
                   </div>
                   <div className="dh-dashboard-map-preview-line" />
                   <div className="dh-dashboard-map-preview-marker dh-dashboard-map-preview-marker--dest">
                     <MapPin size={12} />
-                    <span>Joshimath (1,890m)</span>
+                    <span>{destination?.name || 'Badrinath'} ({Math.round(segments[segments.length - 1]?.endElevationM ?? 1890)}m)</span>
                   </div>
                 </div>
                 <div className="dh-dashboard-map-preview-cta">
@@ -323,7 +330,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     Open Interactive Geospatial Map
                   </Button>
                   <span className="dh-dashboard-map-preview-hint">
-                    Inspect 20 disaggregated 250m road segments &amp; trigger rainfall scenarios
+                    Inspect {segments.length || 20} disaggregated 250m road segments &amp; trigger rainfall scenarios
                   </span>
                 </div>
               </div>
@@ -331,15 +338,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="dh-dashboard-map-preview-metrics">
                 <div className="dh-dashboard-map-stat">
                   <span className="dh-dashboard-map-stat__k">Corridor Length</span>
-                  <span className="dh-dashboard-map-stat__v">156.4 km (NH-7)</span>
+                  <span className="dh-dashboard-map-stat__v">{segments.length > 0 ? (segments.reduce((acc, s) => acc + s.distanceKm, 0)).toFixed(1) : '156.4'} km (NH-7)</span>
                 </div>
                 <div className="dh-dashboard-map-stat">
                   <span className="dh-dashboard-map-stat__k">Elevation Ascent</span>
-                  <span className="dh-dashboard-map-stat__v">372m → 1,890m MSL</span>
+                  <span className="dh-dashboard-map-stat__v">{Math.round(segments[0]?.startElevationM ?? 372)}m → {Math.round(segments[segments.length - 1]?.endElevationM ?? 1890)}m MSL</span>
                 </div>
                 <div className="dh-dashboard-map-stat">
                   <span className="dh-dashboard-map-stat__k">Routing Engine</span>
-                  <span className="dh-dashboard-map-stat__v">OSRM Real Road Profile</span>
+                  <span className="dh-dashboard-map-stat__v">OpenRouteService / OSRM Highway Profile</span>
                 </div>
               </div>
             </div>
@@ -350,7 +357,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* ─── 4. LOWER SECTION: AFFECTED AREAS TABLE + RECENT INCIDENTS ───── */}
       <section className="dh-dashboard-bottom-grid">
         <div className="dh-dashboard-bottom-col dh-dashboard-bottom-col--table">
-          <AffectedAreasTable onSelectSector={handleSelectSector} />
+          <AffectedAreasTable sectors={dynamicSectors} onSelectSector={handleSelectSector} />
         </div>
 
         <div className="dh-dashboard-bottom-col dh-dashboard-bottom-col--incidents">

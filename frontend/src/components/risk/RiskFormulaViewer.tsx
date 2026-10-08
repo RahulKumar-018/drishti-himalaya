@@ -43,15 +43,15 @@ export const RiskFormulaViewer: React.FC<RiskFormulaViewerProps> = ({ className 
           <div className="dh-formula-viewer__pipeline">
             <div className="dh-formula-viewer__pipeline-step dh-formula-viewer__pipeline-step--active">
               <div className="dh-formula-viewer__step-header">
-                <span className="dh-formula-viewer__step-badge">CURRENT STAGE (PHASE 1–6)</span>
-                <span className="dh-formula-viewer__step-title">Deterministic Baseline Engine</span>
+                <span className="dh-formula-viewer__step-badge">ACTIVE PRODUCTION ENGINE</span>
+                <span className="dh-formula-viewer__step-title">FastAPI Authoritative MCDA Engine</span>
               </div>
               <p className="dh-formula-viewer__step-desc">
-                High-assurance, 100% deterministic, zero network flakiness. Evaluates Open-Meteo precipitation, 24h accumulation, probability, and Copernicus DEM 90m terrain gradients directly on the client.
+                Authoritative backend Risk Engine (<code>/api/v1/risk/predict</code>) evaluating Copernicus DEM 90m terrain gradients (35%), Open-Meteo precipitation (30%), GSI landslide proximity (20%), scar cluster density (10%), and road cut-slopes (5%).
               </p>
               <div className="dh-formula-viewer__step-status">
                 <ShieldCheck size={13} />
-                <span>115 Automated Test Suites Passing</span>
+                <span>FastAPI + SQLite/PostGIS + 448 Backend Tests</span>
               </div>
             </div>
 
@@ -60,16 +60,16 @@ export const RiskFormulaViewer: React.FC<RiskFormulaViewerProps> = ({ className 
             <div className="dh-formula-viewer__pipeline-step dh-formula-viewer__pipeline-step--upcoming">
               <div className="dh-formula-viewer__step-header">
                 <span className="dh-formula-viewer__step-badge dh-formula-viewer__step-badge--ml">
-                  BACKEND PHASE
+                  SPATIAL GIS REPOSITORY
                 </span>
-                <span className="dh-formula-viewer__step-title">ML Spatial Hazard Inference</span>
+                <span className="dh-formula-viewer__step-title">GSI 5,206 Landslide Catalog</span>
               </div>
               <p className="dh-formula-viewer__step-desc">
-                FastAPI / PyTorch service computing XGBoost landslide susceptibility maps trained on GSI (Geological Survey of India) historical scar catalogs + cut-slope KD-tree spatial indices.
+                KD-tree spatial indexing over 5,206 Geological Survey of India historical landslide polygons and 2018 OSM highway excavation alignments across Uttarakhand.
               </p>
               <div className="dh-formula-viewer__step-status">
                 <Cpu size={13} />
-                <span>IRiskEngine Interface Contract Ready</span>
+                <span>Sub-Millisecond Nearest-Neighbor Spatial Queries</span>
               </div>
             </div>
           </div>

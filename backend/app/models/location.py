@@ -1,8 +1,13 @@
 """Location database model for geographic reference points and administrative units."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from backend.app.models.terrain import TerrainObservation
+    from backend.app.models.disaster import DisasterEvent
+    from backend.app.models.weather_observation import WeatherObservation
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (

@@ -69,6 +69,31 @@ class TestAPIInfrastructure:
         assert validated.checks["historical_cuttings"] is True
         assert validated.checks["database"] is True
 
+    def test_04d_database_unreachable_when_enabled_fails_readiness(self, client: TestClient, monkeypatch) -> None:
+        """Verify that when DATABASE_ENABLED=True and database fails to connect, /ready returns 503."""
+        from backend.app.core.config import settings
+        from backend.app.core.database import db_manager
+
+        monkeypatch.setattr(settings, "DATABASE_ENABLED", True)
+        monkeypatch.setattr(
+            db_manager,
+            "check_readiness",
+            lambda: (False, "disconnected (PostgreSQL connection timeout)", {"error": "timeout"}),
+        )
+
+        res_ready = client.get("/api/v1/ready")
+        assert res_ready.status_code == 503
+        data_ready = res_ready.json()
+        assert data_ready["ready"] is False
+        assert data_ready["status"] == "not_ready"
+        assert "unreachable" in data_ready["message"].lower()
+
+        res_health = client.get("/api/v1/health")
+        assert res_health.status_code == 200
+        data_health = res_health.json()
+        assert data_health["status"] == "degraded"
+        assert "disconnected" in data_health["database"].lower()
+
     def test_04c_historical_cuttings_returns_valid_response(self, client: TestClient) -> None:
         """4c. Verify /api/v1/hazard/cuttings returns 2018 historical OSM snapshot."""
         response = client.get("/api/v1/hazard/cuttings")
@@ -81,6 +106,29 @@ class TestAPIInfrastructure:
         ids = {f["id"] for f in data["features"]}
         assert 225786479 in ids
         assert 343144200 in ids
+
+    def test_17b_weather_summary_returns_unavailable_when_telemetry_offline(self, client: TestClient, monkeypatch) -> None:
+        """Verify GET /api/v1/weather/corridor-summary returns explicit UNKNOWN and unavailable status when weather feed fails."""
+        from backend.app.services.weather_service import get_weather_service
+        from backend.app.services.weather_models import WeatherQueryResult
+
+        svc = get_weather_service()
+        monkeypatch.setattr(
+            svc,
+            "query_weather",
+            lambda longitude, latitude: WeatherQueryResult(is_available=False, error_message="Open-Meteo connection timeout"),
+        )
+
+        res = client.get("/api/v1/weather/corridor-summary?corridor=NH7")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["weather_status"] == "unavailable"
+        assert data["active_alert_level"] == "UNKNOWN"
+        assert data["average_rainfall_24h_mm"] is None
+        assert data["max_rainfall_24h_mm"] is None
+        for node in data["monitoring_nodes"]:
+            assert node["status"] == "UNKNOWN"
+            assert node["rain_24h_mm"] is None
 
     def test_20_cors_middleware_installed(self, client: TestClient) -> None:
         """20. Verify CORS middleware is properly installed and responds to preflight."""

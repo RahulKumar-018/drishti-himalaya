@@ -24,7 +24,8 @@ from backend.app.services.weather_models import WeatherFeatures, WeatherQueryRes
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FIXTURE_PATH = Path("data/fixtures/weather_baseline.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_FIXTURE_PATH = PROJECT_ROOT / "data" / "fixtures" / "weather_baseline.json"
 
 
 class WeatherService:
@@ -51,8 +52,9 @@ class WeatherService:
         self.timeout_seconds = timeout_seconds
         self._http_client = http_client
         self._owned_client: Optional[httpx.Client] = None
+        self._rate_limited_until: float = 0.0
 
-        # In-memory spatial cache: key=(round(lon, 2), round(lat, 2)), value=(WeatherFeatures, expire_timestamp)
+        # In-memory spatial cache: key=(round(lon, 1), round(lat, 1)), value=(WeatherFeatures, expire_timestamp)
         self._cache: Dict[Tuple[float, float], Tuple[WeatherFeatures, float]] = {}
 
     def _get_client(self) -> httpx.Client:
@@ -95,13 +97,20 @@ class WeatherService:
         """Retrieve weather observations and compute P24, P72, and ARI for a given coordinate."""
         self._validate_coordinates(longitude, latitude)
 
-        # Check local in-memory cache
-        cache_key = (round(longitude, 2), round(latitude, 2))
+        # Spatial resolution matching numerical meteorological forecast grid (~0.1 deg / 11 km)
+        cache_key = (round(longitude, 1), round(latitude, 1))
         now = time.time()
         if cache_key in self._cache:
             features, expire_at = self._cache[cache_key]
             if now < expire_at:
                 return WeatherQueryResult(is_available=True, features=features, cached=True)
+
+        # If temporarily rate-limited, fail fast to avoid stalling segment analysis
+        if self.data_mode != "DEMO" and now < self._rate_limited_until:
+            return WeatherQueryResult(
+                is_available=False,
+                error_message="Open-Meteo API rate limit reached (HTTP 429), cooling down.",
+            )
 
         # Dispatch based on operating mode
         if self.data_mode == "DEMO":
@@ -193,15 +202,19 @@ class WeatherService:
             "timezone": "UTC",
         }
 
-        max_retries = 2
+        max_retries = 1
         for attempt in range(max_retries + 1):
             try:
                 client = self._get_client()
                 response = client.get(self.base_url, params=params)
 
-                if response.status_code == 429 and attempt < max_retries:
-                    time.sleep(0.5 * (attempt + 1))
-                    continue
+                if response.status_code == 429:
+                    self._rate_limited_until = time.time() + 60.0
+                    logger.warning(f"Open-Meteo API rate limit (429) hit at ({longitude}, {latitude})")
+                    return WeatherQueryResult(
+                        is_available=False,
+                        error_message="Open-Meteo API rate limit reached (HTTP 429)",
+                    )
 
                 if response.status_code != 200:
                     return WeatherQueryResult(
